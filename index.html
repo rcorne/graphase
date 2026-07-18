@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Económico Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Corrección global para evitar desbordamientos */
+        * { box-sizing: border-box; }
+
+        :root {
+            --bg-color: #f3f4f6;
+            --surface: #ffffff;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); margin: 0; padding: 2rem 1rem; color: var(--text-main); }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 { font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text-main); letter-spacing: -0.025em; }
+        .header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 1.1rem; }
+
+        /* Pestañas (Tabs) */
+        .tabs { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+        .tab-btn { background-color: var(--surface); border: 1px solid var(--border); padding: 0.75rem 1.5rem; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 9999px; color: var(--text-muted); transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .tab-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .tab-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Layout Principal */
+        .layout-grid { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
+        @media (max-width: 900px) { .layout-grid { grid-template-columns: 1fr; } }
+
+        /* Barra Lateral de Controles */
+        .sidebar { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .sidebar h2 { font-size: 1.25rem; margin-top: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .control-group { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+        .control-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .control-group h4 { font-size: 0.875rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin: 0 0 1rem 0; }
+        
+        .input-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .input-box { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+        .input-box label { font-size: 0.875rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .input-box input { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.2s; background: #f9fafb; }
+        .input-box input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        /* Área del Gráfico y Tarjetas */
+        .main-content { display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .alert { background: #eff6ff; border-left: 4px solid var(--primary); padding: 1rem 1.5rem; border-radius: 8px; color: #1e40af; font-size: 0.95rem; display: flex; align-items: center; gap: 0.75rem; }
+        .instrucciones { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; font-size: 14px; margin-bottom: 15px; text-align: center; font-weight: bold; border: 1px solid #ffeeba;}
+        
+        .chart-card { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); height: 500px; position: relative; cursor: crosshair; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .stat-card { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .stat-card h3 { font-size: 1rem; color: var(--text-muted); margin: 0 0 1rem 0; font-weight: 600; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
+        .stat-item:last-child { margin-bottom: 0; }
+        .stat-item .label { color: var(--text-muted); }
+        .stat-item .value { font-weight: 700; color: var(--text-main); font-size: 1.1rem; }
+        .stat-item .value.highlight { color: var(--primary); }
+        .stat-item .value.danger { color: var(--danger); }
+        .stat-item .value.success { color: var(--success); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Simulador Económico Pro</h1>
+        <p>Análisis interactivo de modelos micro y macroeconómicos en tiempo real</p>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('micro')">Microeconomía (Mercados)</button>
+        <button class="tab-btn" onclick="openTab('macro')">Macroeconomía (IS-LM)</button>
+    </div>
+
+    <!-- MÓDULO MICROECONÓMICO -->
+    <div id="micro" class="tab-content active">
+        <div class="layout-grid">
+            <!-- Barra Lateral Micro -->
+            <div class="sidebar">
+                <h2>⚙️ Parámetros</h2>
+                
+                <div class="control-group">
+                    <h4>Función de Demanda</h4>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Intersección (a)</label>
+                            <input type="number" id="micro-a" value="12" step="0.5">
+                        </div>
+                        <div class="input-box">
+                            <label>Pendiente (b)</label>
+                            <input type="number" id="micro-b" value="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>Función de Oferta</h4>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Intersección (c)</label>
+                            <input type="number" id="micro-c" value="2" step="0.5">
+                        </div>
+                        <div class="input-box">
+                            <label>Pendiente (d)</label>
+                            <input type="number" id="micro-d" value="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>Intervención Fiscal</h4>
+                    <div class="input-row">
+                        <div class="input-box" style="width: 100%;">
+                            <label>Impuesto Unitario (T)</label>
+                            <input type="number" id="micro-t" value="0" step="0.5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido Principal Micro -->
+            <div class="main-content">
+                <div class="alert">
+                    <span>💡 <strong>Tip UX:</strong> Haz clic y arrastra las líneas de Oferta y Demanda directamente en el gráfico para modelar shocks de mercado.</span>
+                </div>
+                
+                <div class="chart-card">
+                    <canvas id="microChart"></canvas>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Equilibrio Libre</h3>
+                        <div class="stat-item"><span class="label">Precio (P*)</span><span class="value highlight" id="micro-p-eq">-</span></div>
+                        <div class="stat-item"><span class="label">Cantidad (Q*)</span><span class="value" id="micro-q-eq">-</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Mercado con Impuesto</h3>
+                        <div class="stat-item"><span class="label">Nueva Cantidad</span><span class="value" id="micro-qt">-</span></div>
+                        <div class="stat-item"><span class="label">Precio Consumidor</span><span class="value danger" id="micro-pb">-</span></div>
+                        <div class="stat-item"><span class="label">Precio Productor</span><span class="value warning" id="micro-ps">-</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Bienestar Económico</h3>
+                        <div class="stat-item"><span class="label">Exc. Consumidor</span><span class="value" id="micro-cs">-</span></div>
+                        <div class="stat-item"><span class="label">Exc. Productor</span><span class="value" id="micro-psurplus">-</span></div>
+                        <div class="stat-item"><span class="label">Recaudación Fiscal</span><span class="value success" id="micro-rev">-</span></div>
+                        <div class="stat-item"><span class="label">Pérdida de Eficiencia</span><span class="value danger" id="micro-dwl">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÓDULO MACROECONÓMICO -->
+    <div id="macro" class="tab-content">
+        <div class="layout-grid">
+            <!-- Barra Lateral Macro -->
+            <div class="sidebar">
+                <h2>⚙️ Parámetros</h2>
+                
+                <div class="control-group">
+                    <h4>Mercado de Bienes (IS)</h4>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Consumo (C0)</label>
+                            <input type="number" id="macro-C0" value="100" step="5">
+                        </div>
+                        <div class="input-box">
+                            <label>PMC (c)</label>
+                            <input type="number" id="macro-c" value="0.8" step="0.05" max="0.99" min="0.01">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Inversión (I0)</label>
+                            <input type="number" id="macro-I0" value="200" step="5">
+                        </div>
+                        <div class="input-box">
+                            <label>Sensibilidad (b)</label>
+                            <input type="number" id="macro-b" value="10" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>Política Fiscal</h4>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Gasto (G)</label>
+                            <input type="number" id="macro-G" value="50" step="5">
+                        </div>
+                        <div class="input-box">
+                            <label>Impuestos (T)</label>
+                            <input type="number" id="macro-T" value="50" step="5">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>Política Monetaria (LM)</h4>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Oferta Mon. (M)</label>
+                            <input type="number" id="macro-M" value="500" step="10">
+                        </div>
+                        <div class="input-box">
+                            <label>Nivel Precios (P)</label>
+                            <input type="number" id="macro-P" value="1" step="0.1">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-box">
+                            <label>Demanda k(Y)</label>
+                            <input type="number" id="macro-k" value="0.5" step="0.1">
+                        </div>
+                        <div class="input-box">
+                            <label>Demanda h(r)</label>
+                            <input type="number" id="macro-h" value="20" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido Principal Macro -->
+            <div class="main-content">
+                <div class="alert">
+                    <span>💡 <strong>Tip UX:</strong> Arrastra verticalmente la curva IS para simular shocks de demanda, o la curva LM para shocks monetarios.</span>
+                </div>
+                
+                <div class="chart-card">
+                    <canvas id="macroChart"></canvas>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Equilibrio General</h3>
+                        <div class="stat-item"><span class="label">Producción (Y*)</span><span class="value highlight" id="macro-y">-</span></div>
+                        <div class="stat-item"><span class="label">Tasa Interés (r*)</span><span class="value warning" id="macro-r">-</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Componentes Demanda</h3>
+                        <div class="stat-item"><span class="label">Consumo Total</span><span class="value" id="macro-consumo">-</span></div>
+                        <div class="stat-item"><span class="label">Inversión Privada</span><span class="value" id="macro-inversion">-</span></div>
+                        <div class="stat-item"><span class="label">Gasto Público</span><span class="value" id="macro-gasto">-</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Mercado Monetario</h3>
+                        <div class="stat-item"><span class="label">Oferta Real (M/P)</span><span class="value success" id="macro-m-real">-</span></div>
+                        <div class="stat-item"><span class="label">Demanda Liquidez</span><span class="value" id="macro-l">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = "#6b7280";
+
+    function openTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabName).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    let microChartInstance = null;
+    let macroChartInstance = null;
+
+    // --- LÓGICA MICROECONÓMICA ---
+    function updateMicro() {
+        const a = parseFloat(document.getElementById('micro-a').value);
+        const b = parseFloat(document.getElementById('micro-b').value);
+        const c = parseFloat(document.getElementById('micro-c').value);
+        const d = parseFloat(document.getElementById('micro-d').value);
+        const T = parseFloat(document.getElementById('micro-t').value) || 0;
+
+        const Q_eq = (a - c) / (b + d);
+        const P_eq = a - b * Q_eq;
+
+        const Q_t = (a - (c + T)) / (b + d);
+        const P_b = a - b * Q_t; 
+        const P_s = c + d * Q_t; 
+
+        const CS = (Q_t > 0) ? 0.5 * Q_t * (a - P_b) : 0;
+        const PS = (Q_t > 0) ? 0.5 * Q_t * (P_s - c) : 0;
+        const TaxRev = (Q_t > 0) ? T * Q_t : 0;
+        const DWL = (Q_t > 0) ? 0.5 * (Q_eq - Q_t) * T : 0;
+
+        document.getElementById('micro-p-eq').innerText = P_eq > 0 ? `$${P_eq.toFixed(2)}` : "-";
+        document.getElementById('micro-q-eq').innerText = Q_eq > 0 ? Q_eq.toFixed(2) : "-";
+        
+        if (Q_t > 0) {
+            document.getElementById('micro-qt').innerText = Q_t.toFixed(2);
+            document.getElementById('micro-pb').innerText = `$${P_b.toFixed(2)}`;
+            document.getElementById('micro-ps').innerText = `$${P_s.toFixed(2)}`;
+            document.getElementById('micro-cs').innerText = `$${CS.toFixed(2)}`;
+            document.getElementById('micro-psurplus').innerText = `$${PS.toFixed(2)}`;
+            document.getElementById('micro-rev').innerText = `$${TaxRev.toFixed(2)}`;
+            document.getElementById('micro-dwl').innerText = `$${DWL.toFixed(2)}`;
+        } else {
+            document.getElementById('micro-qt').innerText = "0";
+            ['micro-pb', 'micro-ps'].forEach(id => document.getElementById(id).innerText = "-");
+            ['micro-cs', 'micro-psurplus', 'micro-rev'].forEach(id => document.getElementById(id).innerText = "$0");
+            document.getElementById('micro-dwl').innerText = "Máxima";
+        }
+
+        let qMax = Math.max(Q_eq * 2, 10);
+        let dataDemanda = [], dataOferta = [], dataOfertaTax = [];
+        for (let q = 0; q <= qMax; q += qMax/20) {
+            dataDemanda.push({x: q, y: a - b * q});
+            dataOferta.push({x: q, y: c + d * q});
+            if (T > 0) dataOfertaTax.push({x: q, y: (c + T) + d * q});
+        }
+
+        let datasets = [
+            { label: 'Demanda', data: dataDemanda, borderColor: '#3b82f6', backgroundColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
+            { label: 'Oferta', data: dataOferta, borderColor: '#ef4444', backgroundColor: '#ef4444', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 }
+        ];
+
+        if (T > 0) datasets.push({ label: 'Oferta + Impuesto', data: dataOfertaTax, borderColor: '#f59e0b', borderDash: [5, 5], showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 });
+        if (Q_eq > 0) datasets.push({ label: 'Equilibrio', data: [{x: Q_eq, y: P_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 });
+
+        if (microChartInstance) microChartInstance.destroy();
+        const ctx = document.getElementById('microChart').getContext('2d');
+        microChartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                scales: {
+                    x: { title: { display: true, text: 'Cantidad (Q)', font: {weight: 'bold'} }, min: 0, max: qMax, grid: { color: '#f3f4f6' } },
+                    y: { title: { display: true, text: 'Precio (P)', font: {weight: 'bold'} }, min: 0, max: a + 5, grid: { color: '#f3f4f6' } }
+                },
+                plugins: { legend: { position: 'top' }, tooltip: { enabled: false } }
+            }
+        });
+    }
+
+    // --- LÓGICA MACROECONÓMICA ---
+    function updateMacro() {
+        const C0 = parseFloat(document.getElementById('macro-C0').value);
+        const c = parseFloat(document.getElementById('macro-c').value);
+        const I0 = parseFloat(document.getElementById('macro-I0').value);
+        const b = parseFloat(document.getElementById('macro-b').value);
+        const G = parseFloat(document.getElementById('macro-G').value);
+        const T = parseFloat(document.getElementById('macro-T').value);
+        const M = parseFloat(document.getElementById('macro-M').value);
+        const P = parseFloat(document.getElementById('macro-P').value);
+        const k = parseFloat(document.getElementById('macro-k').value);
+        const h = parseFloat(document.getElementById('macro-h').value);
+
+        const A = C0 - (c * T) + I0 + G;
+        const realM = M / P;
+
+        const termLeft = (A / b) + (realM / h);
+        const termRight = ((1 - c) / b) + (k / h);
+        const Y_eq = termLeft / termRight;
+        const r_eq = (k / h) * Y_eq - (realM / h);
+
+        const Consumo = C0 + c * (Y_eq - T);
+        const Inversion = I0 - b * r_eq;
+
+        document.getElementById('macro-y').innerText = Y_eq > 0 ? Y_eq.toFixed(2) : "-";
+        document.getElementById('macro-r').innerText = r_eq > 0 ? r_eq.toFixed(2) + '%' : "-";
+        document.getElementById('macro-consumo').innerText = Consumo.toFixed(2);
+        document.getElementById('macro-inversion').innerText = Inversion.toFixed(2);
+        document.getElementById('macro-gasto').innerText = G.toFixed(2);
+        document.getElementById('macro-m-real').innerText = realM.toFixed(2);
+        document.getElementById('macro-l').innerText = (k * Y_eq - h * r_eq).toFixed(2);
+
+        let yMax = Math.max(Y_eq * 2, 1000);
+        let dataIS = [], dataLM = [];
+        for (let y = 0; y <= yMax; y += yMax/20) {
+            dataIS.push({x: y, y: (A / b) - ((1 - c) / b) * y});
+            dataLM.push({x: y, y: (k / h) * y - (realM / h)});
+        }
+
+        if (macroChartInstance) macroChartInstance.destroy();
+        const ctx = document.getElementById('macroChart').getContext('2d');
+        macroChartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'Curva IS', data: dataIS, borderColor: '#3b82f6', backgroundColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
+                    { label: 'Curva LM', data: dataLM, borderColor: '#10b981', backgroundColor: '#10b981', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
+                    { label: 'Equilibrio (Y*, r*)', data: [{x: Y_eq, y: r_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                scales: {
+                    x: { title: { display: true, text: 'Producción / Renta (Y)', font: {weight: 'bold'} }, min: 0, max: yMax, grid: { color: '#f3f4f6' } },
+                    y: { title: { display: true, text: 'Tasa de Interés (r %)', font: {weight: 'bold'} }, min: 0, max: Math.max(r_eq * 2.5, 10), grid: { color: '#f3f4f6' } }
+                },
+                plugins: { legend: { position: 'top' }, tooltip: { enabled: false } }
+            }
+        });
+    }
+
+    // --- DRAG & DROP LOGIC ---
+    function setupDrag(canvasId, getChart, mode) {
+        const canvas = document.getElementById(canvasId);
+        let isDragging = false;
+        let draggingDataset = -1;
+        let startY = 0;
+        let initialVal = 0;
+
+        function getEventY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+
+        function handleDragStart(e) {
+            const chart = getChart();
+            if (!chart) return;
+            const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+            if (points.length > 0) {
+                isDragging = true;
+                canvas.style.cursor = 'grabbing';
+                draggingDataset = points[0].datasetIndex;
+                const rect = canvas.getBoundingClientRect();
+                startY = chart.scales.y.getValueForPixel(getEventY(e) - rect.top);
+
+                if (mode === 'micro') {
+                    initialVal = parseFloat(document.getElementById(draggingDataset === 0 ? 'micro-a' : 'micro-c').value);
+                } else if (mode === 'macro') {
+                    initialVal = parseFloat(document.getElementById(draggingDataset === 0 ? 'macro-C0' : 'macro-M').value);
+                }
+            }
+        }
+
+        function handleDragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const chart = getChart();
+            const rect = canvas.getBoundingClientRect();
+            const deltaY = chart.scales.y.getValueForPixel(getEventY(e) - rect.top) - startY;
+
+            if (mode === 'micro') {
+                if (draggingDataset === 0) document.getElementById('micro-a').value = (initialVal + deltaY).toFixed(1);
+                else if (draggingDataset === 1) document.getElementById('micro-c').value = (initialVal + deltaY).toFixed(1);
+                updateMicro();
+            } else if (mode === 'macro') {
+                if (draggingDataset === 0) {
+                    const b = parseFloat(document.getElementById('macro-b').value);
+                    document.getElementById('macro-C0').value = (initialVal + (deltaY * b)).toFixed(1);
+                } else if (draggingDataset === 1) {
+                    const P = parseFloat(document.getElementById('macro-P').value);
+                    const h = parseFloat(document.getElementById('macro-h').value);
+                    document.getElementById('macro-M').value = (initialVal - (deltaY * P * h)).toFixed(1);
+                }
+                updateMacro();
+            }
+        }
+
+        function handleDragEnd() { isDragging = false; canvas.style.cursor = 'crosshair'; }
+
+        canvas.addEventListener('mousedown', handleDragStart);
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragEnd);
+        canvas.addEventListener('touchstart', handleDragStart, {passive: false});
+        window.addEventListener('touchmove', handleDragMove, {passive: false});
+        window.addEventListener('touchend', handleDragEnd);
+    }
+
+    document.querySelectorAll('#micro input').forEach(inp => inp.addEventListener('input', updateMicro));
+    document.querySelectorAll('#macro input').forEach(inp => inp.addEventListener('input', updateMacro));
+
+    updateMicro();
+    updateMacro();
+    setupDrag('microChart', () => microChartInstance, 'micro');
+    setupDrag('macroChart', () => macroChartInstance, 'macro');
+</script>
+
+</body>
+</html>
