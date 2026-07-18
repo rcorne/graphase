@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Económico Pro</title>
+    <title>Graphase: Simulador Económico </title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Corrección global para evitar desbordamientos */
         * { box-sizing: border-box; }
 
         :root {
             --bg-color: #f3f4f6;
             --surface: #ffffff;
             --primary: #3b82f6;
-            --primary-hover: #2563eb;
             --text-main: #1f2937;
             --text-muted: #6b7280;
             --border: #e5e7eb;
@@ -30,7 +28,6 @@
         .header h1 { font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text-main); letter-spacing: -0.025em; }
         .header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 1.1rem; }
 
-        /* Pestañas (Tabs) */
         .tabs { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
         .tab-btn { background-color: var(--surface); border: 1px solid var(--border); padding: 0.75rem 1.5rem; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 9999px; color: var(--text-muted); transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .tab-btn:hover { border-color: var(--primary); color: var(--primary); }
@@ -38,16 +35,13 @@
         
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Layout Principal */
         .layout-grid { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
         @media (max-width: 900px) { .layout-grid { grid-template-columns: 1fr; } }
 
-        /* Barra Lateral de Controles */
         .sidebar { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .sidebar h2 { font-size: 1.25rem; margin-top: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .sidebar h2 { font-size: 1.25rem; margin-top: 0; margin-bottom: 1.5rem; }
         
         .control-group { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
         .control-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -55,13 +49,11 @@
         
         .input-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
         .input-box { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
-        .input-box label { font-size: 0.875rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .input-box input { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.2s; background: #f9fafb; }
+        .input-box label { font-size: 0.875rem; font-weight: 600; color: var(--text-main); }
+        .input-box input { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.95rem; background: #f9fafb; }
         .input-box input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 
-        /* Área del Gráfico y Tarjetas */
         .main-content { display: flex; flex-direction: column; gap: 1.5rem; }
-        
         .alert { background: #eff6ff; border-left: 4px solid var(--primary); padding: 1rem 1.5rem; border-radius: 8px; color: #1e40af; font-size: 0.95rem; display: flex; align-items: center; gap: 0.75rem; }
         .instrucciones { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; font-size: 14px; margin-bottom: 15px; text-align: center; font-weight: bold; border: 1px solid #ffeeba;}
         
@@ -72,11 +64,18 @@
         .stat-card h3 { font-size: 1rem; color: var(--text-muted); margin: 0 0 1rem 0; font-weight: 600; }
         .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
         .stat-item:last-child { margin-bottom: 0; }
-        .stat-item .label { color: var(--text-muted); }
+        .stat-item .label { color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
         .stat-item .value { font-weight: 700; color: var(--text-main); font-size: 1.1rem; }
         .stat-item .value.highlight { color: var(--primary); }
         .stat-item .value.danger { color: var(--danger); }
         .stat-item .value.success { color: var(--success); }
+
+        /* Cuadros de colores para la leyenda de bienestar */
+        .color-box { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+        .cb-cs { background-color: rgba(16, 185, 129, 0.4); border: 1px solid #10b981; }
+        .cb-ps { background-color: rgba(59, 130, 246, 0.4); border: 1px solid #3b82f6; }
+        .cb-tax { background-color: rgba(245, 158, 11, 0.4); border: 1px solid #f59e0b; }
+        .cb-dwl { background-color: rgba(239, 68, 68, 0.5); border: 1px solid #ef4444; }
     </style>
 </head>
 <body>
@@ -88,17 +87,15 @@
     </div>
     
     <div class="tabs">
-        <button class="tab-btn active" onclick="openTab('micro')">Microeconomía (Mercados)</button>
+        <button class="tab-btn active" onclick="openTab('micro')">Microeconomía (Bienestar)</button>
         <button class="tab-btn" onclick="openTab('macro')">Macroeconomía (IS-LM)</button>
     </div>
 
     <!-- MÓDULO MICROECONÓMICO -->
     <div id="micro" class="tab-content active">
         <div class="layout-grid">
-            <!-- Barra Lateral Micro -->
             <div class="sidebar">
                 <h2>⚙️ Parámetros</h2>
-                
                 <div class="control-group">
                     <h4>Función de Demanda</h4>
                     <div class="input-row">
@@ -112,7 +109,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="control-group">
                     <h4>Función de Oferta</h4>
                     <div class="input-row">
@@ -126,7 +122,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="control-group">
                     <h4>Intervención Fiscal</h4>
                     <div class="input-row">
@@ -138,10 +133,9 @@
                 </div>
             </div>
 
-            <!-- Contenido Principal Micro -->
             <div class="main-content">
                 <div class="alert">
-                    <span>💡 <strong>Tip UX:</strong> Haz clic y arrastra las líneas de Oferta y Demanda directamente en el gráfico para modelar shocks de mercado.</span>
+                    <span>💡 <strong>Interactivo:</strong> Haz clic y arrastra las líneas de Oferta y Demanda en el gráfico para simular shocks y ver cómo se reasignan las áreas de bienestar.</span>
                 </div>
                 
                 <div class="chart-card">
@@ -151,107 +145,68 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3>Equilibrio Libre</h3>
-                        <div class="stat-item"><span class="label">Precio (P*)</span><span class="value highlight" id="micro-p-eq">-</span></div>
+                        <div class="stat-item"><span class="label">Precio Libre (P*)</span><span class="value highlight" id="micro-p-eq">-</span></div>
                         <div class="stat-item"><span class="label">Cantidad (Q*)</span><span class="value" id="micro-q-eq">-</span></div>
                     </div>
                     <div class="stat-card">
-                        <h3>Mercado con Impuesto</h3>
-                        <div class="stat-item"><span class="label">Nueva Cantidad</span><span class="value" id="micro-qt">-</span></div>
-                        <div class="stat-item"><span class="label">Precio Consumidor</span><span class="value danger" id="micro-pb">-</span></div>
-                        <div class="stat-item"><span class="label">Precio Productor</span><span class="value warning" id="micro-ps">-</span></div>
+                        <h3>Impacto Fiscal</h3>
+                        <div class="stat-item"><span class="label">Nueva Cantidad (Qt)</span><span class="value" id="micro-qt">-</span></div>
+                        <div class="stat-item"><span class="label">Paga Consumidor (Pb)</span><span class="value danger" id="micro-pb">-</span></div>
+                        <div class="stat-item"><span class="label">Recibe Productor (Ps)</span><span class="value warning" id="micro-ps">-</span></div>
                     </div>
                     <div class="stat-card">
-                        <h3>Bienestar Económico</h3>
-                        <div class="stat-item"><span class="label">Exc. Consumidor</span><span class="value" id="micro-cs">-</span></div>
-                        <div class="stat-item"><span class="label">Exc. Productor</span><span class="value" id="micro-psurplus">-</span></div>
-                        <div class="stat-item"><span class="label">Recaudación Fiscal</span><span class="value success" id="micro-rev">-</span></div>
-                        <div class="stat-item"><span class="label">Pérdida de Eficiencia</span><span class="value danger" id="micro-dwl">-</span></div>
+                        <h3>Análisis de Bienestar</h3>
+                        <div class="stat-item"><span class="label"><span class="color-box cb-cs"></span> Exc. Consumidor</span><span class="value" id="micro-cs">-</span></div>
+                        <div class="stat-item"><span class="label"><span class="color-box cb-ps"></span> Exc. Productor</span><span class="value" id="micro-psurplus">-</span></div>
+                        <div class="stat-item"><span class="label"><span class="color-box cb-tax"></span> Recaudación Fiscal</span><span class="value success" id="micro-rev">-</span></div>
+                        <div class="stat-item"><span class="label"><span class="color-box cb-dwl"></span> Pérdida Peso Muerto</span><span class="value danger" id="micro-dwl">-</span></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MÓDULO MACROECONÓMICO -->
+    <!-- MÓDULO MACROECONÓMICO (Sin Cambios) -->
     <div id="macro" class="tab-content">
         <div class="layout-grid">
-            <!-- Barra Lateral Macro -->
             <div class="sidebar">
                 <h2>⚙️ Parámetros</h2>
-                
                 <div class="control-group">
                     <h4>Mercado de Bienes (IS)</h4>
                     <div class="input-row">
-                        <div class="input-box">
-                            <label>Consumo (C0)</label>
-                            <input type="number" id="macro-C0" value="100" step="5">
-                        </div>
-                        <div class="input-box">
-                            <label>PMC (c)</label>
-                            <input type="number" id="macro-c" value="0.8" step="0.05" max="0.99" min="0.01">
-                        </div>
+                        <div class="input-box"><label>Consumo (C0)</label><input type="number" id="macro-C0" value="100" step="5"></div>
+                        <div class="input-box"><label>PMC (c)</label><input type="number" id="macro-c" value="0.8" step="0.05" max="0.99" min="0.01"></div>
                     </div>
                     <div class="input-row">
-                        <div class="input-box">
-                            <label>Inversión (I0)</label>
-                            <input type="number" id="macro-I0" value="200" step="5">
-                        </div>
-                        <div class="input-box">
-                            <label>Sensibilidad (b)</label>
-                            <input type="number" id="macro-b" value="10" step="1">
-                        </div>
+                        <div class="input-box"><label>Inversión (I0)</label><input type="number" id="macro-I0" value="200" step="5"></div>
+                        <div class="input-box"><label>Sensibilidad (b)</label><input type="number" id="macro-b" value="10" step="1"></div>
                     </div>
                 </div>
-
                 <div class="control-group">
                     <h4>Política Fiscal</h4>
                     <div class="input-row">
-                        <div class="input-box">
-                            <label>Gasto (G)</label>
-                            <input type="number" id="macro-G" value="50" step="5">
-                        </div>
-                        <div class="input-box">
-                            <label>Impuestos (T)</label>
-                            <input type="number" id="macro-T" value="50" step="5">
-                        </div>
+                        <div class="input-box"><label>Gasto (G)</label><input type="number" id="macro-G" value="50" step="5"></div>
+                        <div class="input-box"><label>Impuestos (T)</label><input type="number" id="macro-T" value="50" step="5"></div>
                     </div>
                 </div>
-
                 <div class="control-group">
                     <h4>Política Monetaria (LM)</h4>
                     <div class="input-row">
-                        <div class="input-box">
-                            <label>Oferta Mon. (M)</label>
-                            <input type="number" id="macro-M" value="500" step="10">
-                        </div>
-                        <div class="input-box">
-                            <label>Nivel Precios (P)</label>
-                            <input type="number" id="macro-P" value="1" step="0.1">
-                        </div>
+                        <div class="input-box"><label>Oferta Mon. (M)</label><input type="number" id="macro-M" value="500" step="10"></div>
+                        <div class="input-box"><label>Nivel Precios (P)</label><input type="number" id="macro-P" value="1" step="0.1"></div>
                     </div>
                     <div class="input-row">
-                        <div class="input-box">
-                            <label>Demanda k(Y)</label>
-                            <input type="number" id="macro-k" value="0.5" step="0.1">
-                        </div>
-                        <div class="input-box">
-                            <label>Demanda h(r)</label>
-                            <input type="number" id="macro-h" value="20" step="1">
-                        </div>
+                        <div class="input-box"><label>Demanda k(Y)</label><input type="number" id="macro-k" value="0.5" step="0.1"></div>
+                        <div class="input-box"><label>Demanda h(r)</label><input type="number" id="macro-h" value="20" step="1"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Contenido Principal Macro -->
             <div class="main-content">
                 <div class="alert">
                     <span>💡 <strong>Tip UX:</strong> Arrastra verticalmente la curva IS para simular shocks de demanda, o la curva LM para shocks monetarios.</span>
                 </div>
-                
-                <div class="chart-card">
-                    <canvas id="macroChart"></canvas>
-                </div>
-
+                <div class="chart-card"><canvas id="macroChart"></canvas></div>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3>Equilibrio General</h3>
@@ -289,6 +244,49 @@
     let microChartInstance = null;
     let macroChartInstance = null;
 
+    // --- PLUGIN PARA COLOREAR ÁREAS DE BIENESTAR EN MICROECONOMÍA ---
+    const shadeAreasPlugin = {
+        id: 'shadeAreas',
+        beforeDraw: (chart) => {
+            if (chart.config.options.plugins.shadeAreas && chart.config.options.plugins.shadeAreas.data) {
+                const { a, c, Q_eq, P_eq, Q_t, P_b, P_s, T } = chart.config.options.plugins.shadeAreas.data;
+                const ctx = chart.ctx;
+                const xAxis = chart.scales.x;
+                const yAxis = chart.scales.y;
+                
+                const getX = (val) => xAxis.getPixelForValue(val);
+                const getY = (val) => yAxis.getPixelForValue(val);
+
+                ctx.save();
+
+                if (Q_t > 0) {
+                    // Excedente del Consumidor (Triángulo Verde)
+                    ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+                    ctx.beginPath(); ctx.moveTo(getX(0), getY(a)); ctx.lineTo(getX(Q_t), getY(P_b)); ctx.lineTo(getX(0), getY(P_b)); ctx.fill();
+
+                    // Excedente del Productor (Triángulo Azul)
+                    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
+                    ctx.beginPath(); ctx.moveTo(getX(0), getY(c)); ctx.lineTo(getX(Q_t), getY(P_s)); ctx.lineTo(getX(0), getY(P_s)); ctx.fill();
+
+                    if (T > 0) {
+                        // Recaudación Fiscal (Rectángulo Naranja)
+                        ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+                        ctx.beginPath(); ctx.moveTo(getX(0), getY(P_b)); ctx.lineTo(getX(Q_t), getY(P_b)); ctx.lineTo(getX(Q_t), getY(P_s)); ctx.lineTo(getX(0), getY(P_s)); ctx.fill();
+
+                        // Pérdida de Peso Muerto / DWL (Triángulo Rojo)
+                        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                        ctx.beginPath(); ctx.moveTo(getX(Q_t), getY(P_b)); ctx.lineTo(getX(Q_eq), getY(P_eq)); ctx.lineTo(getX(Q_t), getY(P_s)); ctx.fill();
+                    }
+                } else {
+                    // Mercado totalmente destruido por impuestos masivos (Todo es Pérdida de Peso Muerto)
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.beginPath(); ctx.moveTo(getX(0), getY(a)); ctx.lineTo(getX(Q_eq), getY(P_eq)); ctx.lineTo(getX(0), getY(c)); ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+    };
+
     // --- LÓGICA MICROECONÓMICA ---
     function updateMicro() {
         const a = parseFloat(document.getElementById('micro-a').value);
@@ -307,7 +305,7 @@
         const CS = (Q_t > 0) ? 0.5 * Q_t * (a - P_b) : 0;
         const PS = (Q_t > 0) ? 0.5 * Q_t * (P_s - c) : 0;
         const TaxRev = (Q_t > 0) ? T * Q_t : 0;
-        const DWL = (Q_t > 0) ? 0.5 * (Q_eq - Q_t) * T : 0;
+        const DWL = (Q_t > 0) ? 0.5 * (Q_eq - Q_t) * T : (0.5 * Q_eq * (a - c));
 
         document.getElementById('micro-p-eq').innerText = P_eq > 0 ? `$${P_eq.toFixed(2)}` : "-";
         document.getElementById('micro-q-eq').innerText = Q_eq > 0 ? Q_eq.toFixed(2) : "-";
@@ -324,7 +322,7 @@
             document.getElementById('micro-qt').innerText = "0";
             ['micro-pb', 'micro-ps'].forEach(id => document.getElementById(id).innerText = "-");
             ['micro-cs', 'micro-psurplus', 'micro-rev'].forEach(id => document.getElementById(id).innerText = "$0");
-            document.getElementById('micro-dwl').innerText = "Máxima";
+            document.getElementById('micro-dwl').innerText = `$${DWL.toFixed(2)}`;
         }
 
         let qMax = Math.max(Q_eq * 2, 10);
@@ -336,25 +334,30 @@
         }
 
         let datasets = [
-            { label: 'Demanda', data: dataDemanda, borderColor: '#3b82f6', backgroundColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
-            { label: 'Oferta', data: dataOferta, borderColor: '#ef4444', backgroundColor: '#ef4444', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 }
+            { label: 'Demanda', data: dataDemanda, borderColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
+            { label: 'Oferta', data: dataOferta, borderColor: '#ef4444', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 }
         ];
 
         if (T > 0) datasets.push({ label: 'Oferta + Impuesto', data: dataOfertaTax, borderColor: '#f59e0b', borderDash: [5, 5], showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 });
-        if (Q_eq > 0) datasets.push({ label: 'Equilibrio', data: [{x: Q_eq, y: P_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 });
+        if (Q_eq > 0) datasets.push({ label: 'Equilibrio Libre', data: [{x: Q_eq, y: P_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 });
 
         if (microChartInstance) microChartInstance.destroy();
         const ctx = document.getElementById('microChart').getContext('2d');
+        
         microChartInstance = new Chart(ctx, {
             type: 'scatter',
             data: { datasets: datasets },
+            plugins: [shadeAreasPlugin], // Injectamos el plugin de coloreado
             options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: { 
+                    legend: { position: 'top' }, tooltip: { enabled: false },
+                    shadeAreas: { data: { a, c, Q_eq, P_eq, Q_t, P_b, P_s, T } }
+                },
                 scales: {
                     x: { title: { display: true, text: 'Cantidad (Q)', font: {weight: 'bold'} }, min: 0, max: qMax, grid: { color: '#f3f4f6' } },
                     y: { title: { display: true, text: 'Precio (P)', font: {weight: 'bold'} }, min: 0, max: a + 5, grid: { color: '#f3f4f6' } }
-                },
-                plugins: { legend: { position: 'top' }, tooltip: { enabled: false } }
+                }
             }
         });
     }
@@ -404,8 +407,8 @@
             type: 'scatter',
             data: {
                 datasets: [
-                    { label: 'Curva IS', data: dataIS, borderColor: '#3b82f6', backgroundColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
-                    { label: 'Curva LM', data: dataLM, borderColor: '#10b981', backgroundColor: '#10b981', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
+                    { label: 'Curva IS', data: dataIS, borderColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
+                    { label: 'Curva LM', data: dataLM, borderColor: '#10b981', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
                     { label: 'Equilibrio (Y*, r*)', data: [{x: Y_eq, y: r_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 }
                 ]
             },
