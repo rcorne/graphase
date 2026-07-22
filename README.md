@@ -1,72 +1,78 @@
-# 📊 Graphase: Simulador Económico Pro
+# 📊 Graphase — Simulador económico
 
-Un simulador económico interactivo de código abierto diseñado para estudiantes, profesores y entusiastas de la economía. Esta herramienta permite visualizar en tiempo real cómo los cambios en los parámetros micro y macroeconómicos afectan los mercados y el equilibrio de una economía.
+Simulador interactivo de micro y macroeconomía para estudiantes, profesores y curiosos. En vez de los gráficos estáticos del libro de texto, aquí mueves los parámetros y ves el equilibrio, los excedentes y las políticas reaccionar en tiempo real — con una explicación en español de qué acaba de pasar.
 
-A diferencia de los gráficos estáticos de los libros de texto, este simulador permite **hacer clic y arrastrar las curvas** para experimentar de primera mano los efectos de los shocks económicos y las políticas gubernamentales.
-
----
-
-## ✨ Características Principales
-
-*   **Interactividad Drag & Drop:** Arrastra las curvas de oferta, demanda, IS o LM directamente sobre el gráfico para ver cómo se ajustan los precios, las cantidades y las tasas de interés en tiempo real.
-*   **Cálculo Instantáneo:** Resolución algebraica automática de sistemas de ecuaciones para encontrar puntos de equilibrio exactos.
-*   **Interfaz Moderna (UI/UX):** Diseño limpio y responsivo estilo *dashboard*, con métricas clave destacadas mediante tarjetas de datos.
-*   **Cero Latencia:** Animaciones optimizadas en `Chart.js` para garantizar que el movimiento de las curvas sea fluido.
+👉 **[Abrir la app](https://rcorne.github.io/graphase/)** · funciona offline e instalable en el teléfono.
 
 ---
 
-## 📈 Módulos Incluidos
+## ✨ Qué lo hace distinto
 
-### 1. Módulo Microeconómico: Mercados y Bienestar
-Simula un mercado de competencia perfecta y analiza los efectos de la intervención gubernamental.
-*   **Oferta y Demanda:** Modifica la intersección y pendiente de ambas curvas.
-*   **Intervención Fiscal:** Aplica un impuesto unitario y visualiza la divergencia entre el precio que paga el consumidor y el que recibe el productor.
-*   **Análisis de Bienestar:** Cálculo automático del Excedente del Consumidor, Excedente del Productor, Recaudación Fiscal y la Pérdida de Peso Muerto (Área de Ineficiencia).
-
-### 2. Módulo Macroeconómico: Modelo IS-LM
-Explora el equilibrio general a corto plazo cruzando el mercado de bienes y el mercado de dinero.
-*   **Mercado de Bienes (IS):** Ajusta el consumo autónomo, la propensión marginal al consumo, la sensibilidad de la inversión a la tasa de interés, el gasto público ($G$) y los impuestos ($T$).
-*   **Mercado de Dinero (LM):** Manipula la oferta monetaria ($M$), el nivel de precios ($P$) y la sensibilidad de la demanda de dinero a la renta y a la tasa de interés.
-*   **Simulación de Políticas:** Visualiza el efecto desplazamiento (*crowding out*) de la política fiscal y la eficacia de la política monetaria expansiva o restrictiva.
+* **Escenarios de un toque.** Impuesto al tabaco, subsidio, demanda rígida, shock de costos, expansión fiscal, expansión monetaria, trampa de liquidez, shock inflacionario. Tocas uno y ves la historia completa.
+* **Lectura económica automática.** No solo el número: *"de los $4 de impuesto, el consumidor absorbe 71% y el productor 29% — la demanda es más rígida, así que el peso cae sobre el comprador"*.
+* **Áreas de bienestar dibujadas.** Excedente del consumidor y del productor, recaudación fiscal y pérdida irrecuperable de eficiencia se sombrean sobre el gráfico, no solo se calculan.
+* **Arrastre de curvas.** Modo explícito para tomar una curva y moverla con el dedo o el mouse.
+* **Sliders con contexto.** Cada parámetro explica qué representa en la economía real, no solo su letra.
+* **Web app móvil.** Barra de navegación inferior, panel de parámetros como bottom sheet deslizable, modo oscuro, PWA instalable con service worker.
 
 ---
 
-## 🚀 Instalación y Uso
+## 📈 Módulos
 
-Este proyecto es extremadamente ligero y no requiere bases de datos, servidores ni procesos de compilación (Node.js/NPM). Se ejecuta 100% del lado del cliente.
+### 1. Microeconomía — mercado de un bien
 
-1.  **Clona el repositorio:**
-    ```bash
-    git clone [https://github.com/TU-USUARIO/simulador-economico.git](https://github.com/TU-USUARIO/simulador-economico.git)
-    ```
-2.  **Abre el proyecto:**
-    Simplemente haz doble clic en el archivo `index.html` para abrirlo en cualquier navegador web moderno (Chrome, Firefox, Edge, Safari).
+Demanda `P = a − b·Q`, oferta `P = c + d·Q`, e intervención fiscal con impuesto unitario **T** (usa T negativo para simular un **subsidio**).
 
-*También puedes probar la versión en vivo alojada en GitHub Pages:*  
-👉 **[Ver Demo en Vivo](https://TU-USUARIO.github.io/simulador-economico/)** *(Nota: Actualiza este enlace una vez que actives GitHub Pages)*.
+Calcula equilibrio libre, precio al consumidor y al productor, excedentes, recaudación (o costo del subsidio), pérdida de eficiencia y el reparto de la carga tributaria `d/(b+d)`.
+
+### 2. Macroeconomía — modelo IS-LM
+
+```
+IS: r = A/b − ((1−c)/b)·Y ,  A = C₀ − c·T + I₀ + G
+LM: r = (k/h)·Y − (M/P)/h
+```
+
+Equilibrio general, componentes de la demanda, saldo fiscal, multiplicador simple y **efecto expulsión** (la diferencia entre el multiplicador keynesiano y el resultado real). Al cambiar de escenario, la situación anterior queda dibujada en gris punteado para ver el desplazamiento de la curva.
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## 🚀 Uso local
 
-*   **HTML5 & CSS3:** Estructura semántica y diseño moderno mediante CSS Grid y Flexbox.
-*   **Vanilla JavaScript (ES6):** Lógica matemática y manipulación del DOM sin frameworks pesados.
-*   **Chart.js:** Librería de renderizado de gráficos HTML5 Canvas para la visualización de datos y curvas.
+No requiere build, Node ni servidor de aplicaciones. Para que funcione el service worker necesita servirse por HTTP (no `file://`):
+
+```bash
+git clone https://github.com/rcorne/graphase.git
+cd graphase
+python3 -m http.server 8000
+# abre http://localhost:8000
+```
+
+---
+
+## 🛠️ Stack
+
+HTML5, CSS3 y JavaScript vanilla (ES6) sin frameworks · [Chart.js](https://www.chartjs.org/) para el renderizado · Service worker con estrategia *stale-while-revalidate* para uso offline.
+
+Identidad visual según el manual de diseño Oikos: paleta Egeo / Terracota / Mármol / Tinta, tipografías Outfit y Manrope.
 
 ---
 
 ## 🤝 Contribuciones
 
-¡Las contribuciones son bienvenidas! Si deseas agregar nuevos modelos (como la Frontera de Posibilidades de Producción, Curvas de Indiferencia, o la Curva de Phillips), siéntete libre de hacer un *fork* del repositorio y enviar un *Pull Request*.
+Bienvenidas. Modelos que faltan y calzarían bien: frontera de posibilidades de producción, curvas de indiferencia, curva de Phillips, AD-AS, precios máximos y mínimos.
 
-1. Haz un Fork del proyecto.
-2. Crea una rama para tu función (`git checkout -b feature/NuevoModelo`).
+1. Haz un fork del proyecto.
+2. Crea una rama (`git checkout -b feature/NuevoModelo`).
 3. Confirma tus cambios (`git commit -m 'Añadir nuevo modelo macro'`).
 4. Haz push a la rama (`git push origin feature/NuevoModelo`).
 5. Abre un Pull Request.
 
 ---
 
+## ☕ Apoya el proyecto
+
+Si te sirve, [invítanos un café](https://www.paypal.com/invoice/p/#RAUCDLSQXTS2S2LP) para seguir mejorando esta y otras soluciones tecnológicas.
+
 ## 📝 Licencia
 
-Este proyecto está bajo la Licencia MIT - siéntete libre de usarlo, modificarlo y distribuirlo para fines educativos o personales.
+MIT — úsalo, modifícalo y distribúyelo libremente para fines educativos o personales.

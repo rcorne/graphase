@@ -1,499 +1,775 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Graphase: Simulador Económico </title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Graphase · Simulador económico</title>
+<meta name="description" content="Simulador interactivo de micro y macroeconomía: oferta y demanda, impuestos, bienestar e IS-LM.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0B3B4D" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F6F1E7" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Graphase">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --egeo-deep:#0B3B4D; --egeo:#0F566E; --egeo-light:#128099;
+  --terracota:#E0704F; --marmol:#F6F1E7; --tinta:#13242C;
+  --bg:var(--marmol); --surface:#FFFFFF; --surface-2:#FBF7EF;
+  --text:var(--tinta); --text-2:#5A6B73; --border:#E3DCCE;
+  --brand:var(--egeo); --accent:var(--terracota);
+  --ok:#2E7D5B; --warn:#C98A2E; --bad:#C0483A;
+  --r:14px; --r-lg:20px;
+  --shadow:0 1px 2px rgba(19,36,44,.06), 0 8px 24px -12px rgba(19,36,44,.18);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --tabbar-h:64px;
+}
+:root[data-theme="dark"]{
+  --bg:#0A1B22; --surface:#102A34; --surface-2:#0D232C;
+  --text:#EDF3F2; --text-2:#9BB0B8; --border:#1E3B47;
+  --brand:var(--egeo-light);
+  --ok:#5DBE92; --warn:#E5B25C; --bad:#F08573;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{overscroll-behavior-y:none}
+body{
+  margin:0;font-family:'Manrope',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;font-size:15px;line-height:1.5;
+  font-variant-ligatures:none;
+  padding-bottom:calc(var(--tabbar-h) + var(--safe-b));
+}
+h1,h2,h3,h4,.font-d{font-family:'Outfit',sans-serif;letter-spacing:-.02em}
+button,input{font-family:inherit;color:inherit}
 
-        :root {
-            --bg-color: #f3f4f6;
-            --surface: #ffffff;
-            --primary: #3b82f6;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-        }
+/* ---------- App bar ---------- */
+.appbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.mark{width:30px;height:30px;flex:0 0 auto}
+.appbar .t{flex:1;min-width:0}
+.appbar h1{font-size:17px;margin:0;font-weight:700}
+.appbar p{margin:0;font-size:11.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{
+  width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface);
+  display:grid;place-items:center;font-size:16px;cursor:pointer;flex:0 0 auto
+}
+.icon-btn:active{transform:scale(.94)}
 
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); margin: 0; padding: 2rem 1rem; color: var(--text-main); }
-        .container { max-width: 1400px; margin: 0 auto; }
-        
-        .header { text-align: center; margin-bottom: 2rem; }
-        .header h1 { font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text-main); letter-spacing: -0.025em; }
-        .header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 1.1rem; }
+main{max-width:960px;margin:0 auto;padding:14px 16px 24px}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-        .tabs { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
-        .tab-btn { background-color: var(--surface); border: 1px solid var(--border); padding: 0.75rem 1.5rem; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 9999px; color: var(--text-muted); transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .tab-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .tab-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
-        
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* ---------- Scenario chips ---------- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 12px;margin:0 -16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid var(--border);
+  background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap
+}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
 
-        .layout-grid { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
-        @media (max-width: 900px) { .layout-grid { grid-template-columns: 1fr; } }
+/* ---------- Chart ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+.chart-card{padding:12px 12px 8px;position:relative}
+.chart-box{position:relative;height:min(46vh,330px);touch-action:pan-y}
+.chart-box.grab{touch-action:none;cursor:grab}
+.chart-tools{display:flex;gap:8px;justify-content:flex-end;padding:6px 2px 0;flex-wrap:wrap}
+.tool{
+  border:1px solid var(--border);background:var(--surface-2);border-radius:999px;padding:6px 11px;
+  font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;display:flex;align-items:center;gap:5px
+}
+.tool[aria-pressed="true"]{background:color-mix(in srgb,var(--brand) 14%,transparent);border-color:var(--brand);color:var(--brand)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 14px;padding:10px 4px 2px;font-size:12px;color:var(--text-2)}
+.legend span{display:flex;align-items:center;gap:6px}
+.swatch{width:14px;height:3px;border-radius:2px;background:currentColor}
+.swatch.area{height:11px;width:11px;border-radius:3px;opacity:.5}
 
-        .sidebar { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .sidebar h2 { font-size: 1.25rem; margin-top: 0; margin-bottom: 1.5rem; }
-        
-        .control-group { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-        .control-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .control-group h4 { font-size: 0.875rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin: 0 0 1rem 0; }
-        
-        .input-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
-        .input-box { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
-        .input-box label { font-size: 0.875rem; font-weight: 600; color: var(--text-main); }
-        .input-box input { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.95rem; background: #f9fafb; }
-        .input-box input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+/* ---------- KPIs ---------- */
+.kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px 12px}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);font-weight:700}
+.kpi .v{font-family:'Outfit';font-size:21px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.v.brand{color:var(--brand)} .v.bad{color:var(--bad)} .v.ok{color:var(--ok)} .v.warn{color:var(--warn)}
+.kpi.wide{grid-column:span 2}
 
-        .main-content { display: flex; flex-direction: column; gap: 1.5rem; }
-        .alert { background: #eff6ff; border-left: 4px solid var(--primary); padding: 1rem 1.5rem; border-radius: 8px; color: #1e40af; font-size: 0.95rem; display: flex; align-items: center; gap: 0.75rem; }
-        .instrucciones { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; font-size: 14px; margin-bottom: 15px; text-align: center; font-weight: bold; border: 1px solid #ffeeba;}
-        
-        .chart-card { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); height: 500px; position: relative; cursor: crosshair; }
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);font-weight:700;margin:22px 0 10px}
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
-        .stat-card { background: var(--surface); padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .stat-card h3 { font-size: 1rem; color: var(--text-muted); margin: 0 0 1rem 0; font-weight: 600; }
-        .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
-        .stat-item:last-child { margin-bottom: 0; }
-        .stat-item .label { color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
-        .stat-item .value { font-weight: 700; color: var(--text-main); font-size: 1.1rem; }
-        .stat-item .value.highlight { color: var(--primary); }
-        .stat-item .value.danger { color: var(--danger); }
-        .stat-item .value.success { color: var(--success); }
+/* ---------- Insight ---------- */
+.insight{
+  background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:var(--r);padding:13px 14px;font-size:14px;line-height:1.55
+}
+.insight b{color:var(--text)}
+.insight + .insight{margin-top:8px}
 
-        /* Cuadros de colores para la leyenda de bienestar */
-        .color-box { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
-        .cb-cs { background-color: rgba(16, 185, 129, 0.4); border: 1px solid #10b981; }
-        .cb-ps { background-color: rgba(59, 130, 246, 0.4); border: 1px solid #3b82f6; }
-        .cb-tax { background-color: rgba(245, 158, 11, 0.4); border: 1px solid #f59e0b; }
-        .cb-dwl { background-color: rgba(239, 68, 68, 0.5); border: 1px solid #ef4444; }
-    </style>
+/* ---------- Learn ---------- */
+details.learn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-top:8px;overflow:hidden}
+details.learn summary{padding:13px 14px;font-weight:700;font-family:'Outfit';font-size:14.5px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px}
+details.learn summary::-webkit-details-marker{display:none}
+details.learn summary::after{content:'＋';margin-left:auto;color:var(--text-2);font-weight:400}
+details.learn[open] summary::after{content:'－'}
+.learn-body{padding:0 14px 14px;font-size:14px;color:var(--text-2);line-height:1.6}
+.learn-body p{margin:0 0 10px}
+.learn-body strong{color:var(--text)}
+.formula{
+  font-family:ui-monospace,Menlo,monospace;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);display:block;margin:8px 0
+}
+
+/* ---------- Support banner ---------- */
+.support{
+  display:flex;align-items:center;gap:12px;margin-top:24px;padding:12px 14px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg)
+}
+.support p{margin:0;flex:1;font-size:12.5px;line-height:1.45;color:var(--text-2)}
+.support a{
+  flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--accent);color:#fff;
+  text-decoration:none;font-weight:700;font-size:13px;padding:10px 14px;border-radius:12px;box-shadow:var(--shadow)
+}
+.support a:active{opacity:.85}
+footer{text-align:center;font-size:11.5px;color:var(--text-2);margin-top:18px}
+
+/* ---------- Tab bar ---------- */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(3,1fr);
+  background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);padding-bottom:var(--safe-b);height:calc(var(--tabbar-h) + var(--safe-b))
+}
+.tabbar button{
+  border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;font-size:11px;font-weight:600;color:var(--text-2);cursor:pointer;padding:0
+}
+.tabbar button svg{width:22px;height:22px}
+.tabbar button[aria-selected="true"]{color:var(--brand)}
+.tabbar button.cta{color:var(--accent)}
+
+/* ---------- Bottom sheet ---------- */
+.scrim{position:fixed;inset:0;background:rgba(11,59,77,.45);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--bg);
+  border-radius:24px 24px 0 0;max-height:86vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);
+  box-shadow:0 -8px 40px rgba(0,0,0,.25)
+}
+.sheet.open{transform:none}
+.sheet-head{padding:10px 18px 6px;text-align:center;position:relative;flex:0 0 auto}
+.grabber{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 10px}
+.sheet-head h2{font-size:17px;margin:0 0 2px}
+.sheet-head p{margin:0;font-size:12px;color:var(--text-2)}
+.sheet-body{overflow-y:auto;padding:12px 18px calc(24px + var(--safe-b));-webkit-overflow-scrolling:touch}
+.sheet-foot{padding:10px 18px calc(14px + var(--safe-b));border-top:1px solid var(--border);display:flex;gap:10px;flex:0 0 auto}
+.btn{flex:1;padding:13px;border-radius:14px;border:1px solid var(--border);background:var(--surface);font-weight:700;font-size:14px;cursor:pointer}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+
+.group{margin-bottom:6px}
+.group h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin:16px 0 8px;font-weight:700}
+.ctrl{padding:11px 0;border-bottom:1px solid var(--border)}
+.ctrl:last-child{border-bottom:0}
+.ctrl-top{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.ctrl-top label{font-weight:700;font-size:14px;flex:1}
+.ctrl-top output{font-family:'Outfit';font-weight:700;font-size:16px;color:var(--brand);font-variant-numeric:tabular-nums}
+.ctrl small{display:block;color:var(--text-2);font-size:12px;line-height:1.45;margin-bottom:9px}
+input[type=range]{width:100%;-webkit-appearance:none;background:none;height:26px;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:var(--border)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--surface);
+  border:2px solid var(--brand);margin-top:-11px;box-shadow:var(--shadow)
+}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:var(--border)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--surface);border:2px solid var(--brand)}
+
+@media(min-width:820px){
+  body{padding-bottom:0}
+  .tabbar{position:static;display:none}
+  .desktop-tabs{display:flex!important;gap:8px}
+  main{display:grid;grid-template-columns:1fr;padding-top:8px}
+  .kpi-row{grid-template-columns:repeat(4,1fr)}
+  .kpi.wide{grid-column:span 2}
+  .chart-box{height:400px}
+  .sheet{position:static;transform:none;max-height:none;border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--shadow);margin-top:16px}
+  .scrim{display:none}
+  .sheet-foot{padding:12px 18px}
+  .sheet-body{max-height:none}
+}
+.desktop-tabs{display:none}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Simulador Económico Pro</h1>
-        <p>Análisis interactivo de modelos micro y macroeconómicos en tiempo real</p>
-    </div>
-    
-    <div class="tabs">
-        <button class="tab-btn active" onclick="openTab('micro')">Microeconomía (Bienestar)</button>
-        <button class="tab-btn" onclick="openTab('macro')">Macroeconomía (IS-LM)</button>
-    </div>
+<header class="appbar">
+  <svg class="mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+    <path d="M6 22 24 7l18 15" stroke="var(--brand)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="15" y="30" width="5" height="8" rx="1.6" fill="var(--brand)"/>
+    <rect x="22.5" y="25" width="5" height="13" rx="1.6" fill="var(--brand)"/>
+    <rect x="30" y="19" width="5" height="19" rx="1.6" fill="var(--accent)"/>
+  </svg>
+  <div class="t">
+    <h1>Graphase</h1>
+    <p>Simulador de micro y macroeconomía</p>
+  </div>
+  <div class="desktop-tabs">
+    <button class="chip" data-goto="micro" aria-pressed="true">Micro</button>
+    <button class="chip" data-goto="macro" aria-pressed="false">Macro</button>
+  </div>
+  <button class="icon-btn" id="themeBtn" aria-label="Cambiar tema">🌙</button>
+</header>
 
-    <!-- MÓDULO MICROECONÓMICO -->
-    <div id="micro" class="tab-content active">
-        <div class="layout-grid">
-            <div class="sidebar">
-                <h2>⚙️ Parámetros</h2>
-                <div class="control-group">
-                    <h4>Función de Demanda</h4>
-                    <div class="input-row">
-                        <div class="input-box">
-                            <label>Intersección (a)</label>
-                            <input type="number" id="micro-a" value="12" step="0.5">
-                        </div>
-                        <div class="input-box">
-                            <label>Pendiente (b)</label>
-                            <input type="number" id="micro-b" value="1" step="0.1">
-                        </div>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <h4>Función de Oferta</h4>
-                    <div class="input-row">
-                        <div class="input-box">
-                            <label>Intersección (c)</label>
-                            <input type="number" id="micro-c" value="2" step="0.5">
-                        </div>
-                        <div class="input-box">
-                            <label>Pendiente (d)</label>
-                            <input type="number" id="micro-d" value="1" step="0.1">
-                        </div>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <h4>Intervención Fiscal</h4>
-                    <div class="input-row">
-                        <div class="input-box" style="width: 100%;">
-                            <label>Impuesto Unitario (T)</label>
-                            <input type="number" id="micro-t" value="0" step="0.5">
-                        </div>
-                    </div>
-                </div>
-            </div>
+<main>
+  <!-- ============ MICRO ============ -->
+  <section id="micro" class="view active">
+    <div class="chips" id="presets-micro"></div>
 
-            <div class="main-content">
-                <div class="alert">
-                    <span>💡 <strong>Interactivo:</strong> Haz clic y arrastra las líneas de Oferta y Demanda en el gráfico para simular shocks y ver cómo se reasignan las áreas de bienestar.</span>
-                </div>
-                
-                <div class="chart-card">
-                    <canvas id="microChart"></canvas>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Equilibrio Libre</h3>
-                        <div class="stat-item"><span class="label">Precio Libre (P*)</span><span class="value highlight" id="micro-p-eq">-</span></div>
-                        <div class="stat-item"><span class="label">Cantidad (Q*)</span><span class="value" id="micro-q-eq">-</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Impacto Fiscal</h3>
-                        <div class="stat-item"><span class="label">Nueva Cantidad (Qt)</span><span class="value" id="micro-qt">-</span></div>
-                        <div class="stat-item"><span class="label">Paga Consumidor (Pb)</span><span class="value danger" id="micro-pb">-</span></div>
-                        <div class="stat-item"><span class="label">Recibe Productor (Ps)</span><span class="value warning" id="micro-ps">-</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Análisis de Bienestar</h3>
-                        <div class="stat-item"><span class="label"><span class="color-box cb-cs"></span> Exc. Consumidor</span><span class="value" id="micro-cs">-</span></div>
-                        <div class="stat-item"><span class="label"><span class="color-box cb-ps"></span> Exc. Productor</span><span class="value" id="micro-psurplus">-</span></div>
-                        <div class="stat-item"><span class="label"><span class="color-box cb-tax"></span> Recaudación Fiscal</span><span class="value success" id="micro-rev">-</span></div>
-                        <div class="stat-item"><span class="label"><span class="color-box cb-dwl"></span> Pérdida Peso Muerto</span><span class="value danger" id="micro-dwl">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="card chart-card">
+      <div class="chart-box" id="box-micro"><canvas id="microChart"></canvas></div>
+      <div class="chart-tools">
+        <button class="tool" data-toggle="areas" data-view="micro" aria-pressed="true">▦ Bienestar</button>
+        <button class="tool" data-toggle="drag" data-view="micro" aria-pressed="false">✋ Arrastrar curvas</button>
+      </div>
+      <div class="legend">
+        <span style="color:var(--egeo-light)"><i class="swatch"></i>Demanda</span>
+        <span style="color:var(--terracota)"><i class="swatch"></i>Oferta</span>
+        <span style="color:var(--warn)"><i class="swatch"></i>Oferta + impuesto</span>
+        <span style="color:var(--egeo-light)"><i class="swatch area" style="background:currentColor"></i>Excedente consumidor</span>
+        <span style="color:var(--terracota)"><i class="swatch area" style="background:currentColor"></i>Excedente productor</span>
+        <span style="color:var(--ok)"><i class="swatch area" style="background:currentColor"></i>Recaudación</span>
+        <span style="color:var(--bad)"><i class="swatch area" style="background:currentColor"></i>Pérdida de eficiencia</span>
+      </div>
     </div>
 
-    <!-- MÓDULO MACROECONÓMICO (Sin Cambios) -->
-    <div id="macro" class="tab-content">
-        <div class="layout-grid">
-            <div class="sidebar">
-                <h2>⚙️ Parámetros</h2>
-                <div class="control-group">
-                    <h4>Mercado de Bienes (IS)</h4>
-                    <div class="input-row">
-                        <div class="input-box"><label>Consumo (C0)</label><input type="number" id="macro-C0" value="100" step="5"></div>
-                        <div class="input-box"><label>PMC (c)</label><input type="number" id="macro-c" value="0.8" step="0.05" max="0.99" min="0.01"></div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-box"><label>Inversión (I0)</label><input type="number" id="macro-I0" value="200" step="5"></div>
-                        <div class="input-box"><label>Sensibilidad (b)</label><input type="number" id="macro-b" value="10" step="1"></div>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <h4>Política Fiscal</h4>
-                    <div class="input-row">
-                        <div class="input-box"><label>Gasto (G)</label><input type="number" id="macro-G" value="50" step="5"></div>
-                        <div class="input-box"><label>Impuestos (T)</label><input type="number" id="macro-T" value="50" step="5"></div>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <h4>Política Monetaria (LM)</h4>
-                    <div class="input-row">
-                        <div class="input-box"><label>Oferta Mon. (M)</label><input type="number" id="macro-M" value="500" step="10"></div>
-                        <div class="input-box"><label>Nivel Precios (P)</label><input type="number" id="macro-P" value="1" step="0.1"></div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-box"><label>Demanda k(Y)</label><input type="number" id="macro-k" value="0.5" step="0.1"></div>
-                        <div class="input-box"><label>Demanda h(r)</label><input type="number" id="macro-h" value="20" step="1"></div>
-                    </div>
-                </div>
-            </div>
+    <div class="section-title">Resultado del mercado</div>
+    <div class="kpi-row" id="kpi-micro"></div>
 
-            <div class="main-content">
-                <div class="alert">
-                    <span>💡 <strong>Tip UX:</strong> Arrastra verticalmente la curva IS para simular shocks de demanda, o la curva LM para shocks monetarios.</span>
-                </div>
-                <div class="chart-card"><canvas id="macroChart"></canvas></div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Equilibrio General</h3>
-                        <div class="stat-item"><span class="label">Producción (Y*)</span><span class="value highlight" id="macro-y">-</span></div>
-                        <div class="stat-item"><span class="label">Tasa Interés (r*)</span><span class="value warning" id="macro-r">-</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Componentes Demanda</h3>
-                        <div class="stat-item"><span class="label">Consumo Total</span><span class="value" id="macro-consumo">-</span></div>
-                        <div class="stat-item"><span class="label">Inversión Privada</span><span class="value" id="macro-inversion">-</span></div>
-                        <div class="stat-item"><span class="label">Gasto Público</span><span class="value" id="macro-gasto">-</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Mercado Monetario</h3>
-                        <div class="stat-item"><span class="label">Oferta Real (M/P)</span><span class="value success" id="macro-m-real">-</span></div>
-                        <div class="stat-item"><span class="label">Demanda Liquidez</span><span class="value" id="macro-l">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="section-title">Lectura económica</div>
+    <div id="insight-micro"></div>
+
+    <div class="section-title">Aprende</div>
+    <details class="learn">
+      <summary>Cómo se lee este gráfico</summary>
+      <div class="learn-body">
+        <p>El eje horizontal es la <strong>cantidad (Q)</strong> y el vertical el <strong>precio (P)</strong>. La demanda cae porque a mayor precio se compra menos; la oferta sube porque a mayor precio conviene producir más.</p>
+        <span class="formula">Demanda: P = a − b·Q   |   Oferta: P = c + d·Q</span>
+        <p>Donde se cruzan está el <strong>equilibrio</strong>: el único precio en que la cantidad que se quiere comprar iguala a la que se quiere vender. No sobra ni falta producto.</p>
+      </div>
+    </details>
+    <details class="learn">
+      <summary>Qué hace un impuesto (y quién lo paga)</summary>
+      <div class="learn-body">
+        <p>Un impuesto unitario <strong>T</strong> desplaza la oferta hacia arriba en exactamente T. El consumidor termina pagando <strong>P<sub>c</sub></strong> y el productor recibe <strong>P<sub>p</sub></strong>, con P<sub>c</sub> − P<sub>p</sub> = T.</p>
+        <p>Clave: quién soporta el impuesto <strong>no depende de a quién se le cobre</strong>, sino de las pendientes. El lado más rígido (menos elástico) carga con la mayor parte.</p>
+        <span class="formula">Carga consumidor = d / (b + d)</span>
+        <p>Usa <strong>T negativo</strong> en los parámetros para simular un <strong>subsidio</strong>.</p>
+      </div>
+    </details>
+    <details class="learn">
+      <summary>Excedentes y pérdida de eficiencia</summary>
+      <div class="learn-body">
+        <p>El <strong>excedente del consumidor</strong> es lo que la gente estaba dispuesta a pagar menos lo que efectivamente pagó (triángulo bajo la demanda). El <strong>excedente del productor</strong> es lo contrario (sobre la oferta).</p>
+        <p>El impuesto transfiere parte de esos excedentes al Estado (recaudación) pero destruye otra parte: son transacciones que sí generaban valor y ya no ocurren. Ese triángulo rojo es la <strong>pérdida irrecuperable de eficiencia</strong>.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ MACRO ============ -->
+  <section id="macro" class="view">
+    <div class="chips" id="presets-macro"></div>
+
+    <div class="card chart-card">
+      <div class="chart-box" id="box-macro"><canvas id="macroChart"></canvas></div>
+      <div class="chart-tools">
+        <button class="tool" data-toggle="drag" data-view="macro" aria-pressed="false">✋ Arrastrar curvas</button>
+      </div>
+      <div class="legend">
+        <span style="color:var(--egeo-light)"><i class="swatch"></i>IS · mercado de bienes</span>
+        <span style="color:var(--terracota)"><i class="swatch"></i>LM · mercado de dinero</span>
+        <span style="color:var(--text-2)"><i class="swatch" style="opacity:.5"></i>Situación anterior</span>
+      </div>
     </div>
-</div>
+
+    <div class="section-title">Equilibrio general</div>
+    <div class="kpi-row" id="kpi-macro"></div>
+
+    <div class="section-title">Lectura económica</div>
+    <div id="insight-macro"></div>
+
+    <div class="section-title">Aprende</div>
+    <details class="learn">
+      <summary>Qué son IS y LM</summary>
+      <div class="learn-body">
+        <p><strong>IS</strong> reúne todas las combinaciones de producción (Y) y tasa de interés (r) en que el mercado de bienes está en equilibrio. Baja: si sube la tasa, la inversión cae y con ella la producción.</p>
+        <span class="formula">IS: r = A/b − ((1−c)/b)·Y ,  A = C₀ − c·T + I₀ + G</span>
+        <p><strong>LM</strong> reúne las combinaciones en que el mercado de dinero está equilibrado. Sube: más producción exige más dinero para transacciones, y con oferta monetaria fija la tasa debe subir.</p>
+        <span class="formula">LM: r = (k/h)·Y − (M/P)/h</span>
+      </div>
+    </details>
+    <details class="learn">
+      <summary>Política fiscal vs. monetaria</summary>
+      <div class="learn-body">
+        <p><strong>Fiscal expansiva</strong> (más G o menos T): desplaza IS a la derecha. Sube Y <em>y</em> sube r. Esa alza de tasa reduce la inversión privada: es el <strong>efecto expulsión (crowding out)</strong>.</p>
+        <p><strong>Monetaria expansiva</strong> (más M): desplaza LM a la derecha. Sube Y y <em>baja</em> r, estimulando la inversión.</p>
+        <p>Prueba el escenario "Trampa de liquidez": con h muy alto la LM se aplana y la política monetaria pierde casi todo su efecto.</p>
+      </div>
+    </details>
+    <details class="learn">
+      <summary>El multiplicador</summary>
+      <div class="learn-body">
+        <p>Si la gente consume una fracción <strong>c</strong> de cada peso extra, un gasto inicial se multiplica al circular por la economía.</p>
+        <span class="formula">Multiplicador simple = 1 / (1 − c)</span>
+        <p>Pero en IS-LM el efecto real es menor, porque el alza de la tasa de interés frena parte del impulso. El panel de arriba te muestra ambos números.</p>
+      </div>
+    </details>
+  </section>
+
+  <div class="support">
+    <p>Apóyanos con un café para seguir mejorando esta y otras soluciones tecnológicas.</p>
+    <a href="https://www.paypal.com/invoice/p/#RAUCDLSQXTS2S2LP" target="_blank" rel="noopener">☕ Un café</a>
+  </div>
+  <footer>Graphase · un proyecto Oikos</footer>
+</main>
+
+<nav class="tabbar" role="tablist">
+  <button role="tab" aria-selected="true" data-goto="micro">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V4M4 20h16"/><path d="M6 17 18 6"/><path d="M6 7l12 10"/></svg>
+    Micro
+  </button>
+  <button role="tab" aria-selected="false" data-goto="macro">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V4M4 20h16"/><path d="M6 16c4 0 6-9 12-9"/><path d="M6 8c5 3 7 8 12 9"/></svg>
+    Macro
+  </button>
+  <button class="cta" id="openSheet">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg>
+    Parámetros
+  </button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-label="Parámetros">
+  <div class="sheet-head">
+    <div class="grabber"></div>
+    <h2 id="sheetTitle">Parámetros</h2>
+    <p id="sheetSub">Mueve los controles y mira el gráfico reaccionar</p>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot">
+    <button class="btn" id="resetBtn">Restablecer</button>
+    <button class="btn primary" id="closeSheet">Ver gráfico</button>
+  </div>
+</aside>
 
 <script>
-    Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.color = "#6b7280";
-
-    function openTab(tabName) {
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(tabName).classList.add('active');
-        event.currentTarget.classList.add('active');
+/* ======================= Configuración de modelos ======================= */
+const MODELS = {
+  micro: {
+    title: 'Mercado de un bien',
+    groups: [
+      { name: 'Demanda', params: [
+        { id:'a', label:'Precio máximo (a)', min:2, max:30, step:.5, def:12, fmt:v=>'$'+v.toFixed(1),
+          hint:'Cuánto pagaría el consumidor más entusiasta. Sube la demanda completa: más ingreso, más moda, más población.' },
+        { id:'b', label:'Sensibilidad al precio (b)', min:.1, max:4, step:.1, def:1, fmt:v=>v.toFixed(1),
+          hint:'Qué tan rápido cae la cantidad al subir el precio. Valor bajo = demanda elástica (plana); valor alto = rígida (empinada).' },
+      ]},
+      { name: 'Oferta', params: [
+        { id:'c', label:'Costo mínimo (c)', min:0, max:20, step:.5, def:2, fmt:v=>'$'+v.toFixed(1),
+          hint:'Precio bajo el cual nadie produce. Sube con costos de insumos, salarios o energía.' },
+        { id:'d', label:'Costo marginal creciente (d)', min:.1, max:4, step:.1, def:1, fmt:v=>v.toFixed(1),
+          hint:'Cuánto encarece producir cada unidad extra. Alto = capacidad limitada; bajo = producción muy escalable.' },
+      ]},
+      { name: 'Intervención del Estado', params: [
+        { id:'T', label:'Impuesto por unidad (T)', min:-5, max:10, step:.5, def:0, fmt:v=>(v<0?'−$':'$')+Math.abs(v).toFixed(1),
+          hint:'Positivo = impuesto. Negativo = subsidio. Se cobra por cada unidad vendida.' },
+      ]},
+    ],
+    presets: {
+      'Base':{a:12,b:1,c:2,d:1,T:0},
+      'Impuesto al tabaco':{a:12,b:.4,c:2,d:1,T:4},
+      'Subsidio':{a:12,b:1,c:2,d:1,T:-3},
+      'Demanda rígida':{a:14,b:3,c:2,d:.5,T:2},
+      'Shock de costos':{a:12,b:1,c:7,d:1.5,T:0},
     }
-
-    let microChartInstance = null;
-    let macroChartInstance = null;
-
-    // --- PLUGIN PARA COLOREAR ÁREAS DE BIENESTAR EN MICROECONOMÍA ---
-    const shadeAreasPlugin = {
-        id: 'shadeAreas',
-        beforeDraw: (chart) => {
-            if (chart.config.options.plugins.shadeAreas && chart.config.options.plugins.shadeAreas.data) {
-                const { a, c, Q_eq, P_eq, Q_t, P_b, P_s, T } = chart.config.options.plugins.shadeAreas.data;
-                const ctx = chart.ctx;
-                const xAxis = chart.scales.x;
-                const yAxis = chart.scales.y;
-                
-                const getX = (val) => xAxis.getPixelForValue(val);
-                const getY = (val) => yAxis.getPixelForValue(val);
-
-                ctx.save();
-
-                if (Q_t > 0) {
-                    // Excedente del Consumidor (Triángulo Verde)
-                    ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
-                    ctx.beginPath(); ctx.moveTo(getX(0), getY(a)); ctx.lineTo(getX(Q_t), getY(P_b)); ctx.lineTo(getX(0), getY(P_b)); ctx.fill();
-
-                    // Excedente del Productor (Triángulo Azul)
-                    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
-                    ctx.beginPath(); ctx.moveTo(getX(0), getY(c)); ctx.lineTo(getX(Q_t), getY(P_s)); ctx.lineTo(getX(0), getY(P_s)); ctx.fill();
-
-                    if (T > 0) {
-                        // Recaudación Fiscal (Rectángulo Naranja)
-                        ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
-                        ctx.beginPath(); ctx.moveTo(getX(0), getY(P_b)); ctx.lineTo(getX(Q_t), getY(P_b)); ctx.lineTo(getX(Q_t), getY(P_s)); ctx.lineTo(getX(0), getY(P_s)); ctx.fill();
-
-                        // Pérdida de Peso Muerto / DWL (Triángulo Rojo)
-                        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-                        ctx.beginPath(); ctx.moveTo(getX(Q_t), getY(P_b)); ctx.lineTo(getX(Q_eq), getY(P_eq)); ctx.lineTo(getX(Q_t), getY(P_s)); ctx.fill();
-                    }
-                } else {
-                    // Mercado totalmente destruido por impuestos masivos (Todo es Pérdida de Peso Muerto)
-                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-                    ctx.beginPath(); ctx.moveTo(getX(0), getY(a)); ctx.lineTo(getX(Q_eq), getY(P_eq)); ctx.lineTo(getX(0), getY(c)); ctx.fill();
-                }
-                ctx.restore();
-            }
-        }
-    };
-
-    // --- LÓGICA MICROECONÓMICA ---
-    function updateMicro() {
-        const a = parseFloat(document.getElementById('micro-a').value);
-        const b = parseFloat(document.getElementById('micro-b').value);
-        const c = parseFloat(document.getElementById('micro-c').value);
-        const d = parseFloat(document.getElementById('micro-d').value);
-        const T = parseFloat(document.getElementById('micro-t').value) || 0;
-
-        const Q_eq = (a - c) / (b + d);
-        const P_eq = a - b * Q_eq;
-
-        const Q_t = (a - (c + T)) / (b + d);
-        const P_b = a - b * Q_t; 
-        const P_s = c + d * Q_t; 
-
-        const CS = (Q_t > 0) ? 0.5 * Q_t * (a - P_b) : 0;
-        const PS = (Q_t > 0) ? 0.5 * Q_t * (P_s - c) : 0;
-        const TaxRev = (Q_t > 0) ? T * Q_t : 0;
-        const DWL = (Q_t > 0) ? 0.5 * (Q_eq - Q_t) * T : (0.5 * Q_eq * (a - c));
-
-        document.getElementById('micro-p-eq').innerText = P_eq > 0 ? `$${P_eq.toFixed(2)}` : "-";
-        document.getElementById('micro-q-eq').innerText = Q_eq > 0 ? Q_eq.toFixed(2) : "-";
-        
-        if (Q_t > 0) {
-            document.getElementById('micro-qt').innerText = Q_t.toFixed(2);
-            document.getElementById('micro-pb').innerText = `$${P_b.toFixed(2)}`;
-            document.getElementById('micro-ps').innerText = `$${P_s.toFixed(2)}`;
-            document.getElementById('micro-cs').innerText = `$${CS.toFixed(2)}`;
-            document.getElementById('micro-psurplus').innerText = `$${PS.toFixed(2)}`;
-            document.getElementById('micro-rev').innerText = `$${TaxRev.toFixed(2)}`;
-            document.getElementById('micro-dwl').innerText = `$${DWL.toFixed(2)}`;
-        } else {
-            document.getElementById('micro-qt').innerText = "0";
-            ['micro-pb', 'micro-ps'].forEach(id => document.getElementById(id).innerText = "-");
-            ['micro-cs', 'micro-psurplus', 'micro-rev'].forEach(id => document.getElementById(id).innerText = "$0");
-            document.getElementById('micro-dwl').innerText = `$${DWL.toFixed(2)}`;
-        }
-
-        let qMax = Math.max(Q_eq * 2, 10);
-        let dataDemanda = [], dataOferta = [], dataOfertaTax = [];
-        for (let q = 0; q <= qMax; q += qMax/20) {
-            dataDemanda.push({x: q, y: a - b * q});
-            dataOferta.push({x: q, y: c + d * q});
-            if (T > 0) dataOfertaTax.push({x: q, y: (c + T) + d * q});
-        }
-
-        let datasets = [
-            { label: 'Demanda', data: dataDemanda, borderColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
-            { label: 'Oferta', data: dataOferta, borderColor: '#ef4444', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 }
-        ];
-
-        if (T > 0) datasets.push({ label: 'Oferta + Impuesto', data: dataOfertaTax, borderColor: '#f59e0b', borderDash: [5, 5], showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 });
-        if (Q_eq > 0) datasets.push({ label: 'Equilibrio Libre', data: [{x: Q_eq, y: P_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 });
-
-        if (microChartInstance) microChartInstance.destroy();
-        const ctx = document.getElementById('microChart').getContext('2d');
-        
-        microChartInstance = new Chart(ctx, {
-            type: 'scatter',
-            data: { datasets: datasets },
-            plugins: [shadeAreasPlugin], // Injectamos el plugin de coloreado
-            options: {
-                responsive: true, maintainAspectRatio: false, animation: false,
-                plugins: { 
-                    legend: { position: 'top' }, tooltip: { enabled: false },
-                    shadeAreas: { data: { a, c, Q_eq, P_eq, Q_t, P_b, P_s, T } }
-                },
-                scales: {
-                    x: { title: { display: true, text: 'Cantidad (Q)', font: {weight: 'bold'} }, min: 0, max: qMax, grid: { color: '#f3f4f6' } },
-                    y: { title: { display: true, text: 'Precio (P)', font: {weight: 'bold'} }, min: 0, max: a + 5, grid: { color: '#f3f4f6' } }
-                }
-            }
-        });
+  },
+  macro: {
+    title: 'Modelo IS-LM',
+    groups: [
+      { name: 'Consumo e inversión', params: [
+        { id:'C0', label:'Consumo autónomo (C₀)', min:0, max:400, step:10, def:100, fmt:v=>v.toFixed(0),
+          hint:'Lo que los hogares consumen aunque no tengan ingreso: confianza, ahorro previo, crédito.' },
+        { id:'c', label:'Propensión a consumir (c)', min:.1, max:.95, step:.05, def:.8, fmt:v=>v.toFixed(2),
+          hint:'De cada peso extra de ingreso, cuánto se consume. Es el motor del multiplicador.' },
+        { id:'I0', label:'Inversión autónoma (I₀)', min:0, max:500, step:10, def:200, fmt:v=>v.toFixed(0),
+          hint:'Inversión que no depende de la tasa: expectativas empresariales, tecnología.' },
+        { id:'b', label:'Sensibilidad de la inversión (b)', min:1, max:60, step:1, def:10, fmt:v=>v.toFixed(0),
+          hint:'Cuánto cae la inversión cuando sube 1 punto la tasa. Alto = política monetaria muy potente.' },
+      ]},
+      { name: 'Política fiscal', params: [
+        { id:'G', label:'Gasto público (G)', min:0, max:400, step:10, def:50, fmt:v=>v.toFixed(0),
+          hint:'Compras del Estado. Entra directo a la demanda agregada.' },
+        { id:'T', label:'Impuestos (T)', min:0, max:400, step:10, def:50, fmt:v=>v.toFixed(0),
+          hint:'Reducen el ingreso disponible. Su efecto contractivo es menor que el expansivo de G.' },
+      ]},
+      { name: 'Política monetaria', params: [
+        { id:'M', label:'Oferta monetaria (M)', min:100, max:2000, step:50, def:500, fmt:v=>v.toFixed(0),
+          hint:'Dinero que emite el banco central.' },
+        { id:'P', label:'Nivel de precios (P)', min:.5, max:4, step:.1, def:1, fmt:v=>v.toFixed(1),
+          hint:'Con más inflación, el mismo dinero nominal compra menos: cae M/P y sube la tasa.' },
+        { id:'k', label:'Demanda de dinero por ingreso (k)', min:.1, max:2, step:.1, def:.5, fmt:v=>v.toFixed(1),
+          hint:'Cuánto efectivo se necesita por cada peso de transacciones.' },
+        { id:'h', label:'Sensibilidad a la tasa (h)', min:1, max:200, step:1, def:20, fmt:v=>v.toFixed(0),
+          hint:'Cuánto dinero se deja de guardar cuando sube la tasa. Muy alto = LM plana = trampa de liquidez.' },
+      ]},
+    ],
+    presets: {
+      'Base':{C0:100,c:.8,I0:200,b:10,G:50,T:50,M:500,P:1,k:.5,h:20},
+      'Expansión fiscal':{C0:100,c:.8,I0:200,b:10,G:200,T:50,M:500,P:1,k:.5,h:20},
+      'Expansión monetaria':{C0:100,c:.8,I0:200,b:10,G:50,T:50,M:1200,P:1,k:.5,h:20},
+      'Trampa de liquidez':{C0:100,c:.8,I0:200,b:10,G:50,T:50,M:500,P:1,k:.5,h:190},
+      'Shock inflacionario':{C0:100,c:.8,I0:200,b:10,G:50,T:50,M:500,P:2.5,k:.5,h:20},
     }
+  }
+};
 
-    // --- LÓGICA MACROECONÓMICA ---
-    function updateMacro() {
-        const C0 = parseFloat(document.getElementById('macro-C0').value);
-        const c = parseFloat(document.getElementById('macro-c').value);
-        const I0 = parseFloat(document.getElementById('macro-I0').value);
-        const b = parseFloat(document.getElementById('macro-b').value);
-        const G = parseFloat(document.getElementById('macro-G').value);
-        const T = parseFloat(document.getElementById('macro-T').value);
-        const M = parseFloat(document.getElementById('macro-M').value);
-        const P = parseFloat(document.getElementById('macro-P').value);
-        const k = parseFloat(document.getElementById('macro-k').value);
-        const h = parseFloat(document.getElementById('macro-h').value);
+/* ======================= Estado ======================= */
+const S = { view:'micro', areas:true, drag:{micro:false,macro:false}, preset:{micro:'Base',macro:'Base'} };
+const V = { micro:{}, macro:{} };
+let ghost = null; // situación anterior en macro
+for (const m in MODELS) MODELS[m].groups.forEach(g=>g.params.forEach(p=>V[m][p.id]=p.def));
 
-        const A = C0 - (c * T) + I0 + G;
-        const realM = M / P;
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const money = v => (v<0?'−$':'$') + Math.abs(v).toFixed(2);
+const num = v => v.toFixed(1);
 
-        const termLeft = (A / b) + (realM / h);
-        const termRight = ((1 - c) / b) + (k / h);
-        const Y_eq = termLeft / termRight;
-        const r_eq = (k / h) * Y_eq - (realM / h);
+/* ======================= Tema ======================= */
+let ready = false;
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  $('#themeBtn').textContent = t==='dark' ? '☀️' : '🌙';
+  localStorage.setItem('graphase-theme', t);
+  if(ready) render();
+}
+$('#themeBtn').onclick = () => applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+applyTheme(localStorage.getItem('graphase-theme') || (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 
-        const Consumo = C0 + c * (Y_eq - T);
-        const Inversion = I0 - b * r_eq;
+/* ======================= Navegación ======================= */
+function goto(view){
+  S.view = view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id===view));
+  document.querySelectorAll('[data-goto]').forEach(b=>{
+    const on = b.dataset.goto===view;
+    if(b.hasAttribute('role')) b.setAttribute('aria-selected', on); else b.setAttribute('aria-pressed', on);
+  });
+  buildSheet();
+  scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>goto(b.dataset.goto));
 
-        document.getElementById('macro-y').innerText = Y_eq > 0 ? Y_eq.toFixed(2) : "-";
-        document.getElementById('macro-r').innerText = r_eq > 0 ? r_eq.toFixed(2) + '%' : "-";
-        document.getElementById('macro-consumo').innerText = Consumo.toFixed(2);
-        document.getElementById('macro-inversion').innerText = Inversion.toFixed(2);
-        document.getElementById('macro-gasto').innerText = G.toFixed(2);
-        document.getElementById('macro-m-real').innerText = realM.toFixed(2);
-        document.getElementById('macro-l').innerText = (k * Y_eq - h * r_eq).toFixed(2);
+/* ======================= Bottom sheet ======================= */
+const sheet = $('#sheet'), scrim = $('#scrim');
+const openSheet = () => { sheet.classList.add('open'); scrim.classList.add('open'); document.body.style.overflow='hidden'; };
+const closeSheet = () => { sheet.classList.remove('open'); scrim.classList.remove('open'); document.body.style.overflow=''; };
+$('#openSheet').onclick = openSheet; $('#closeSheet').onclick = closeSheet; scrim.onclick = closeSheet;
+$('#resetBtn').onclick = () => applyPreset(S.view, 'Base');
 
-        let yMax = Math.max(Y_eq * 2, 1000);
-        let dataIS = [], dataLM = [];
-        for (let y = 0; y <= yMax; y += yMax/20) {
-            dataIS.push({x: y, y: (A / b) - ((1 - c) / b) * y});
-            dataLM.push({x: y, y: (k / h) * y - (realM / h)});
-        }
+let dragY=0;
+sheet.querySelector('.sheet-head').addEventListener('touchstart', e=>dragY=e.touches[0].clientY, {passive:true});
+sheet.querySelector('.sheet-head').addEventListener('touchmove', e=>{
+  const dy = e.touches[0].clientY - dragY;
+  if(dy>0) sheet.style.transform = `translateY(${dy}px)`;
+}, {passive:true});
+sheet.querySelector('.sheet-head').addEventListener('touchend', e=>{
+  const dy = e.changedTouches[0].clientY - dragY;
+  sheet.style.transform = '';
+  if(dy>90) closeSheet();
+});
 
-        if (macroChartInstance) macroChartInstance.destroy();
-        const ctx = document.getElementById('macroChart').getContext('2d');
-        macroChartInstance = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    { label: 'Curva IS', data: dataIS, borderColor: '#3b82f6', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
-                    { label: 'Curva LM', data: dataLM, borderColor: '#10b981', showLine: true, tension: 0, pointRadius: 0, hitRadius: 15, borderWidth: 3 },
-                    { label: 'Equilibrio (Y*, r*)', data: [{x: Y_eq, y: r_eq}], backgroundColor: '#1f2937', pointRadius: 6, hitRadius: 0 }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, animation: false,
-                scales: {
-                    x: { title: { display: true, text: 'Producción / Renta (Y)', font: {weight: 'bold'} }, min: 0, max: yMax, grid: { color: '#f3f4f6' } },
-                    y: { title: { display: true, text: 'Tasa de Interés (r %)', font: {weight: 'bold'} }, min: 0, max: Math.max(r_eq * 2.5, 10), grid: { color: '#f3f4f6' } }
-                },
-                plugins: { legend: { position: 'top' }, tooltip: { enabled: false } }
-            }
-        });
+function buildSheet(){
+  const m = MODELS[S.view];
+  $('#sheetTitle').textContent = m.title;
+  const body = $('#sheetBody'); body.innerHTML = '';
+  m.groups.forEach(g=>{
+    const h = document.createElement('h3'); h.textContent = g.name; body.appendChild(h);
+    const wrap = document.createElement('div'); wrap.className='group';
+    g.params.forEach(p=>{
+      const d = document.createElement('div'); d.className='ctrl';
+      d.innerHTML = `<div class="ctrl-top"><label for="i-${p.id}">${p.label}</label><output id="o-${p.id}"></output></div>
+        <small>${p.hint}</small>
+        <input type="range" id="i-${p.id}" min="${p.min}" max="${p.max}" step="${p.step}">`;
+      wrap.appendChild(d);
+      const inp = d.querySelector('input'), out = d.querySelector('output');
+      inp.value = V[S.view][p.id];
+      out.textContent = p.fmt(V[S.view][p.id]);
+      inp.addEventListener('input', ()=>{
+        V[S.view][p.id] = parseFloat(inp.value);
+        out.textContent = p.fmt(V[S.view][p.id]);
+        S.preset[S.view] = null; syncPresets();
+        render();
+      });
+    });
+    body.appendChild(wrap);
+  });
+}
+function syncSheetInputs(){
+  MODELS[S.view].groups.forEach(g=>g.params.forEach(p=>{
+    const i = document.getElementById('i-'+p.id), o = document.getElementById('o-'+p.id);
+    if(i){ i.value = V[S.view][p.id]; o.textContent = p.fmt(V[S.view][p.id]); }
+  }));
+}
+
+/* ======================= Presets ======================= */
+function buildPresets(view){
+  const box = document.getElementById('presets-'+view); box.innerHTML='';
+  Object.keys(MODELS[view].presets).forEach(name=>{
+    const b = document.createElement('button');
+    b.className='chip'; b.textContent=name; b.dataset.preset=name;
+    b.onclick = () => applyPreset(view, name);
+    box.appendChild(b);
+  });
+}
+function applyPreset(view, name){
+  if(view==='macro') ghost = macroCurves(V.macro);
+  Object.assign(V[view], MODELS[view].presets[name]);
+  S.preset[view] = name;
+  syncPresets(); syncSheetInputs(); render();
+}
+function syncPresets(){
+  document.querySelectorAll('[data-preset]').forEach(b=>{
+    const view = b.parentElement.id.split('-')[1];
+    b.setAttribute('aria-pressed', S.preset[view]===b.dataset.preset);
+  });
+}
+
+/* ======================= Toggles del gráfico ======================= */
+document.querySelectorAll('[data-toggle]').forEach(b=>{
+  b.onclick = ()=>{
+    const on = b.getAttribute('aria-pressed')!=='true';
+    b.setAttribute('aria-pressed', on);
+    if(b.dataset.toggle==='areas'){ S.areas = on; render(); }
+    else { S.drag[b.dataset.view] = on; document.getElementById('box-'+b.dataset.view).classList.toggle('grab', on); }
+  };
+});
+
+/* ======================= Chart.js base ======================= */
+Chart.defaults.font.family = "'Manrope', sans-serif";
+Chart.defaults.font.size = 11;
+let charts = {};
+
+function baseOpts(xLabel, yLabel, xMax, yMax){
+  const grid = css('--border'), tick = css('--text-2');
+  return {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    layout:{padding:{right:6,top:6}},
+    scales:{
+      x:{ min:0, max:xMax, title:{display:true,text:xLabel,color:tick,font:{weight:'700',size:11}},
+          grid:{color:grid,drawTicks:false}, border:{color:grid}, ticks:{color:tick,maxTicksLimit:6} },
+      y:{ min:0, max:yMax, title:{display:true,text:yLabel,color:tick,font:{weight:'700',size:11}},
+          grid:{color:grid,drawTicks:false}, border:{color:grid}, ticks:{color:tick,maxTicksLimit:6} }
+    },
+    plugins:{ legend:{display:false}, tooltip:{enabled:false} }
+  };
+}
+const line = (data,color,dash) => ({
+  data, showLine:true, tension:0, pointRadius:0, hitRadius:24, borderWidth:3,
+  borderColor:color, backgroundColor:color, borderDash:dash||[]
+});
+
+/* ======================= MICRO ======================= */
+function microSolve(v){
+  const {a,b,c,d,T} = v;
+  const Qe = (a-c)/(b+d), Pe = a - b*Qe;
+  const Qt = Math.max(0,(a-c-T)/(b+d));
+  const Pc = a - b*Qt, Pp = c + d*Qt;
+  return { Qe:Math.max(0,Qe), Pe, Qt, Pc, Pp,
+    CS: .5*Qt*(a-Pc), PS: .5*Qt*(Pp-c), REV: T*Qt,
+    DWL: .5*Math.abs(Qe-Qt)*Math.abs(T),
+    shareC: d/(b+d) };
+}
+const areasPlugin = {
+  id:'areas',
+  beforeDatasetsDraw(chart){
+    const m = chart.$micro; if(!m || !S.areas) return;
+    const {ctx, scales:{x,y}} = chart;
+    const px = (q,p) => [x.getPixelForValue(q), y.getPixelForValue(p)];
+    const poly = (pts,color)=>{ ctx.save(); ctx.beginPath();
+      pts.forEach((p,i)=>{ const [X,Y]=px(p[0],p[1]); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+      ctx.closePath(); ctx.fillStyle=color; ctx.fill(); ctx.restore(); };
+    const A = c => c;
+    if(m.Qt>0){
+      poly([[0,m.v.a],[0,m.Pc],[m.Qt,m.Pc]], A(css('--egeo-light')+'40'));
+      poly([[0,m.v.c],[0,m.Pp],[m.Qt,m.Pp]], A(css('--terracota')+'40'));
+      if(m.v.T>0) poly([[0,m.Pp],[0,m.Pc],[m.Qt,m.Pc],[m.Qt,m.Pp]], A(css('--ok')+'38'));
+      if(Math.abs(m.v.T)>.01) poly([[m.Qt,m.Pc],[m.Qt,m.Pp],[m.Qe,m.Pe]], A(css('--bad')+'45'));
     }
+    // guías al equilibrio
+    ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle=css('--text-2'); ctx.globalAlpha=.5; ctx.lineWidth=1;
+    const [ex,ey] = px(m.Qt||m.Qe, m.Pc); ctx.beginPath();
+    ctx.moveTo(x.getPixelForValue(0), ey); ctx.lineTo(ex,ey); ctx.lineTo(ex, y.getPixelForValue(0)); ctx.stroke(); ctx.restore();
+  }
+};
+function renderMicro(){
+  const v = V.micro, m = microSolve(v);
+  const qMax = Math.max(m.Qe*1.9, 4), pMax = Math.max(v.a, v.c+Math.max(v.T,0))*1.12;
+  const seg = (f,n=2)=>{ const out=[]; for(let i=0;i<=n;i++){const q=qMax*i/n; out.push({x:q,y:f(q)});} return out; };
 
-    // --- DRAG & DROP LOGIC ---
-    function setupDrag(canvasId, getChart, mode) {
-        const canvas = document.getElementById(canvasId);
-        let isDragging = false;
-        let draggingDataset = -1;
-        let startY = 0;
-        let initialVal = 0;
+  const ds = [
+    line(seg(q=>v.a-v.b*q), css('--egeo-light')),
+    line(seg(q=>v.c+v.d*q), css('--terracota')),
+  ];
+  if(Math.abs(v.T)>.01) ds.push(line(seg(q=>v.c+v.T+v.d*q), css('--warn'), [6,5]));
+  if(m.Qt>0) ds.push({ data:[{x:m.Qt,y:m.Pc},{x:m.Qt,y:m.Pp}], showLine:false, pointRadius:5,
+    pointBackgroundColor:css('--text'), pointBorderColor:css('--surface'), pointBorderWidth:2, hitRadius:0 });
 
-        function getEventY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+  charts.micro?.destroy();
+  charts.micro = new Chart($('#microChart'), {
+    type:'scatter', data:{datasets:ds},
+    options:baseOpts('Cantidad (Q)','Precio (P)',qMax,pMax),
+    plugins:[areasPlugin]
+  });
+  charts.micro.$micro = {...m, v};
+  charts.micro.update();
 
-        function handleDragStart(e) {
-            const chart = getChart();
-            if (!chart) return;
-            const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
-            if (points.length > 0) {
-                isDragging = true;
-                canvas.style.cursor = 'grabbing';
-                draggingDataset = points[0].datasetIndex;
-                const rect = canvas.getBoundingClientRect();
-                startY = chart.scales.y.getValueForPixel(getEventY(e) - rect.top);
+  const dQ = m.Qe>0 ? (m.Qt-m.Qe)/m.Qe*100 : 0;
+  kpis('kpi-micro', [
+    ['Precio de equilibrio', money(m.Pe), 'brand'],
+    ['Cantidad de equilibrio', num(m.Qe), ''],
+    [v.T>=0?'Paga el consumidor':'Recibe el consumidor', money(m.Pc), 'bad'],
+    [v.T>=0?'Recibe el productor':'Recibe el productor', money(m.Pp), 'warn'],
+    ['Excedente consumidor', money(m.CS), ''],
+    ['Excedente productor', money(m.PS), ''],
+    [v.T>=0?'Recaudación fiscal':'Costo del subsidio', money(Math.abs(m.REV)), v.T>=0?'ok':'bad'],
+    ['Pérdida de eficiencia', money(m.DWL), 'bad'],
+  ]);
 
-                if (mode === 'micro') {
-                    initialVal = parseFloat(document.getElementById(draggingDataset === 0 ? 'micro-a' : 'micro-c').value);
-                } else if (mode === 'macro') {
-                    initialVal = parseFloat(document.getElementById(draggingDataset === 0 ? 'macro-C0' : 'macro-M').value);
-                }
-            }
-        }
+  const ins = [];
+  if(Math.abs(v.T)<.01){
+    ins.push(`El mercado se vacía en <b>${money(m.Pe)}</b> con <b>${num(m.Qe)}</b> unidades. El bienestar total (<b>${money(m.CS+m.PS)}</b>) es el máximo posible: cualquier intervención lo reducirá.`);
+  } else if(v.T>0){
+    ins.push(`De los <b>${money(v.T)}</b> de impuesto, el consumidor absorbe <b>${(m.shareC*100).toFixed(0)}%</b> y el productor <b>${(100-m.shareC*100).toFixed(0)}%</b>. ${m.shareC>.6?'La demanda es más rígida que la oferta, así que el peso cae sobre el comprador.':m.shareC<.4?'La oferta es más rígida, así que el productor termina financiando la mayor parte.':'Ambos lados tienen flexibilidad parecida y reparten la carga.'}`);
+    ins.push(`Las ventas caen <b>${Math.abs(dQ).toFixed(0)}%</b>. El Estado recauda <b>${money(m.REV)}</b>, pero <b>${money(m.DWL)}</b> de valor simplemente desaparece: son intercambios que convenían a ambas partes y ya no ocurren.`);
+  } else {
+    ins.push(`El subsidio de <b>${money(-v.T)}</b> por unidad expande las ventas <b>${dQ.toFixed(0)}%</b> y le cuesta al fisco <b>${money(Math.abs(m.REV))}</b>. Aun así genera <b>${money(m.DWL)}</b> de ineficiencia: se producen unidades que valen menos de lo que cuesta fabricarlas.`);
+  }
+  if(m.Qt<=0) ins.push('El impuesto es tan alto que <b>el mercado desaparece</b>: ningún precio deja satisfechos a comprador y vendedor. Recaudación cero.');
+  $('#insight-micro').innerHTML = ins.map(t=>`<div class="insight">${t}</div>`).join('');
+}
 
-        function handleDragMove(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            const chart = getChart();
-            const rect = canvas.getBoundingClientRect();
-            const deltaY = chart.scales.y.getValueForPixel(getEventY(e) - rect.top) - startY;
+/* ======================= MACRO ======================= */
+function macroSolve(v){
+  const A = v.C0 - v.c*v.T + v.I0 + v.G, Mr = v.M/v.P;
+  const Y = ((A/v.b) + (Mr/v.h)) / (((1-v.c)/v.b) + (v.k/v.h));
+  const r = (v.k/v.h)*Y - Mr/v.h;
+  return { A, Mr, Y, r, C:v.C0 + v.c*(Y-v.T), I:v.I0 - v.b*r,
+    mult:1/(1-v.c), Ykeynes:A/(1-v.c) };
+}
+function macroCurves(v){
+  const s = macroSolve(v);
+  return { v:{...v}, s };
+}
+function renderMacro(){
+  const v = V.macro, s = macroSolve(v);
+  const yMax = Math.max(s.Y*1.9, 400), rMax = Math.max(s.r*2.2, 8);
+  const seg = f => [{x:0,y:f(0)},{x:yMax,y:f(yMax)}];
+  const IS = y => s.A/v.b - ((1-v.c)/v.b)*y;
+  const LM = y => (v.k/v.h)*y - s.Mr/v.h;
 
-            if (mode === 'micro') {
-                if (draggingDataset === 0) document.getElementById('micro-a').value = (initialVal + deltaY).toFixed(1);
-                else if (draggingDataset === 1) document.getElementById('micro-c').value = (initialVal + deltaY).toFixed(1);
-                updateMicro();
-            } else if (mode === 'macro') {
-                if (draggingDataset === 0) {
-                    const b = parseFloat(document.getElementById('macro-b').value);
-                    document.getElementById('macro-C0').value = (initialVal + (deltaY * b)).toFixed(1);
-                } else if (draggingDataset === 1) {
-                    const P = parseFloat(document.getElementById('macro-P').value);
-                    const h = parseFloat(document.getElementById('macro-h').value);
-                    document.getElementById('macro-M').value = (initialVal - (deltaY * P * h)).toFixed(1);
-                }
-                updateMacro();
-            }
-        }
+  const ds = [ line(seg(IS), css('--egeo-light')), line(seg(LM), css('--terracota')) ];
+  if(ghost){
+    const g = ghost, gIS = y=>g.s.A/g.v.b - ((1-g.v.c)/g.v.b)*y, gLM = y=>(g.v.k/g.v.h)*y - g.s.Mr/g.v.h;
+    const faint = css('--text-2')+'70';
+    ds.push({...line(seg(gIS), faint, [5,5]), borderWidth:2});
+    ds.push({...line(seg(gLM), faint, [5,5]), borderWidth:2});
+  }
+  ds.push({ data:[{x:s.Y,y:s.r}], showLine:false, pointRadius:6,
+    pointBackgroundColor:css('--text'), pointBorderColor:css('--surface'), pointBorderWidth:2, hitRadius:0 });
 
-        function handleDragEnd() { isDragging = false; canvas.style.cursor = 'crosshair'; }
+  charts.macro?.destroy();
+  charts.macro = new Chart($('#macroChart'), {
+    type:'scatter', data:{datasets:ds},
+    options:baseOpts('Producción / Renta (Y)','Tasa de interés (r %)',yMax,rMax)
+  });
 
-        canvas.addEventListener('mousedown', handleDragStart);
-        window.addEventListener('mousemove', handleDragMove);
-        window.addEventListener('mouseup', handleDragEnd);
-        canvas.addEventListener('touchstart', handleDragStart, {passive: false});
-        window.addEventListener('touchmove', handleDragMove, {passive: false});
-        window.addEventListener('touchend', handleDragEnd);
+  const crowd = s.Ykeynes - s.Y;
+  kpis('kpi-macro', [
+    ['Producción (Y*)', s.Y.toFixed(0), 'brand'],
+    ['Tasa de interés (r*)', s.r.toFixed(2)+'%', 'warn'],
+    ['Consumo', s.C.toFixed(0), ''],
+    ['Inversión', s.I.toFixed(0), s.I<0?'bad':''],
+    ['Gasto público', v.G.toFixed(0), ''],
+    ['Saldo fiscal', (v.T-v.G).toFixed(0), (v.T-v.G)<0?'bad':'ok'],
+    ['Multiplicador simple', s.mult.toFixed(2), ''],
+    ['Efecto expulsión', crowd.toFixed(0), 'bad'],
+  ]);
+
+  const ins = [];
+  ins.push(`La economía se estabiliza produciendo <b>${s.Y.toFixed(0)}</b> con una tasa de <b>${s.r.toFixed(2)}%</b>. Ahí, y solo ahí, el mercado de bienes y el de dinero están en equilibrio a la vez.`);
+  ins.push(`Sin efecto sobre la tasa, el gasto se multiplicaría hasta <b>${s.Ykeynes.toFixed(0)}</b>. Como subir la producción exige más dinero y encarece el crédito, se pierden <b>${crowd.toFixed(0)}</b> puntos de producto: eso es el <b>efecto expulsión</b>.`);
+  if(v.h>120) ins.push('Con h tan alto la <b>LM está casi plana</b>: emitir dinero apenas mueve la tasa, y la política monetaria pierde tracción. Es la <b>trampa de liquidez</b> — aquí manda la política fiscal.');
+  if(v.P>1.8) ins.push(`Los precios altos reducen el dinero real a <b>${s.Mr.toFixed(0)}</b>. La LM se desplaza a la izquierda y la tasa sube sin que el banco central haya hecho nada.`);
+  if(s.I<0) ins.push('La inversión resulta <b>negativa</b>: la tasa de equilibrio supera lo que cualquier proyecto tolera. Revisa I₀ o la sensibilidad b.');
+  $('#insight-macro').innerHTML = ins.map(t=>`<div class="insight">${t}</div>`).join('');
+}
+
+function kpis(id, items){
+  document.getElementById(id).innerHTML = items.map(([k,v,cl])=>
+    `<div class="kpi"><div class="k">${k}</div><div class="v ${cl}">${v}</div></div>`).join('');
+}
+
+/* ======================= Arrastre de curvas ======================= */
+function setupDrag(canvasId, view){
+  const cv = document.getElementById(canvasId);
+  let on=false, idx=-1, y0=0, v0=0;
+  const ey = e => e.touches ? e.touches[0].clientY : e.clientY;
+
+  function start(e){
+    if(e.type==='touchstart' && !S.drag[view]) return;
+    const ch = charts[view]; if(!ch) return;
+    const pts = ch.getElementsAtEventForMode(e, 'nearest', {intersect:false}, true);
+    if(!pts.length || pts[0].datasetIndex>1) return;
+    if(view==='macro') ghost = macroCurves(V.macro);
+    on=true; idx=pts[0].datasetIndex;
+    y0 = ch.scales.y.getValueForPixel(ey(e) - cv.getBoundingClientRect().top);
+    v0 = view==='micro' ? V.micro[idx===0?'a':'c'] : V.macro[idx===0?'C0':'M'];
+    cv.style.cursor='grabbing';
+  }
+  function move(e){
+    if(!on) return; e.preventDefault();
+    const ch = charts[view];
+    const dy = ch.scales.y.getValueForPixel(ey(e) - cv.getBoundingClientRect().top) - y0;
+    if(view==='micro'){
+      const k = idx===0?'a':'c';
+      V.micro[k] = clamp(k, 'micro', v0 + dy);
+    } else {
+      if(idx===0) V.macro.C0 = clamp('C0','macro', v0 + dy*V.macro.b);
+      else V.macro.M = clamp('M','macro', v0 - dy*V.macro.P*V.macro.h);
     }
+    S.preset[view]=null; syncPresets(); syncSheetInputs(); render();
+  }
+  function end(){ on=false; cv.style.cursor=''; }
 
-    document.querySelectorAll('#micro input').forEach(inp => inp.addEventListener('input', updateMicro));
-    document.querySelectorAll('#macro input').forEach(inp => inp.addEventListener('input', updateMacro));
+  cv.addEventListener('mousedown', start);
+  addEventListener('mousemove', move); addEventListener('mouseup', end);
+  cv.addEventListener('touchstart', start, {passive:false});
+  addEventListener('touchmove', move, {passive:false}); addEventListener('touchend', end);
+}
+function clamp(id, view, val){
+  const p = MODELS[view].groups.flatMap(g=>g.params).find(p=>p.id===id);
+  return Math.min(p.max, Math.max(p.min, Math.round(val/p.step)*p.step));
+}
 
-    updateMicro();
-    updateMacro();
-    setupDrag('microChart', () => microChartInstance, 'micro');
-    setupDrag('macroChart', () => macroChartInstance, 'macro');
+/* ======================= Init ======================= */
+function render(){ renderMicro(); renderMacro(); }
+buildPresets('micro'); buildPresets('macro'); syncPresets(); buildSheet();
+ready = true; render();
+setupDrag('microChart','micro'); setupDrag('macroChart','macro');
+if('serviceWorker' in navigator) addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
-
 </body>
 </html>
