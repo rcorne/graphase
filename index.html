@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>Graphase · Simulador económico</title>
 <meta name="description" content="Simulador interactivo de micro y macroeconomía: oferta y demanda, impuestos, bienestar e IS-LM.">
+
+<!-- Identifica este sitio dentro de la propiedad GA4 compartida. Debe ir ANTES del contenedor. -->
+<script>window.dataLayer = window.dataLayer || []; dataLayer.push({ site_name: 'graphase' });</script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-WHJ5TV2Q');</script>
+<!-- End Google Tag Manager -->
+
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0B3B4D" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F6F1E7" media="(prefers-color-scheme: light)">
@@ -207,6 +218,11 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 </head>
 <body>
 
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WHJ5TV2Q"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
 <header class="appbar">
   <svg class="mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
     <path d="M6 22 24 7l18 15" stroke="var(--brand)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -332,7 +348,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 
   <div class="support">
     <p>Apóyanos con un café para seguir mejorando esta y otras soluciones tecnológicas.</p>
-    <a href="https://www.paypal.com/invoice/p/#RAUCDLSQXTS2S2LP" target="_blank" rel="noopener">☕ Un café</a>
+    <a id="cafeBtn" href="https://www.paypal.com/invoice/p/#RAUCDLSQXTS2S2LP" target="_blank" rel="noopener">☕ Un café</a>
   </div>
   <footer>Graphase · un proyecto Oikos</footer>
 </main>
@@ -443,6 +459,13 @@ const V = { micro:{}, macro:{} };
 let ghost = null; // situación anterior en macro
 for (const m in MODELS) MODELS[m].groups.forEach(g=>g.params.forEach(p=>V[m][p.id]=p.def));
 
+/* Envía un evento al dataLayer para que GTM lo recoja. site_name viaja en cada
+   evento para poder filtrar Graphase dentro de la propiedad GA4 compartida. */
+const SITE = 'graphase';
+function track(event, params){
+  (window.dataLayer = window.dataLayer || []).push({ event, site_name:SITE, ...params });
+}
+
 const $ = s => document.querySelector(s);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const money = v => (v<0?'−$':'$') + Math.abs(v).toFixed(2);
@@ -469,6 +492,7 @@ function goto(view){
   });
   buildSheet();
   scrollTo({top:0,behavior:'smooth'});
+  track('cambiar_modulo', {modulo:view});
 }
 document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>goto(b.dataset.goto));
 
@@ -477,7 +501,7 @@ const sheet = $('#sheet'), scrim = $('#scrim');
 const openSheet = () => { sheet.classList.add('open'); scrim.classList.add('open'); document.body.style.overflow='hidden'; };
 const closeSheet = () => { sheet.classList.remove('open'); scrim.classList.remove('open'); document.body.style.overflow=''; };
 $('#openSheet').onclick = openSheet; $('#closeSheet').onclick = closeSheet; scrim.onclick = closeSheet;
-$('#resetBtn').onclick = () => applyPreset(S.view, 'Base');
+$('#resetBtn').onclick = () => applyPreset(S.view, 'Base', 'restablecer');
 
 let dragY=0;
 sheet.querySelector('.sheet-head').addEventListener('touchstart', e=>dragY=e.touches[0].clientY, {passive:true});
@@ -534,11 +558,12 @@ function buildPresets(view){
     box.appendChild(b);
   });
 }
-function applyPreset(view, name){
+function applyPreset(view, name, origen='escenario'){
   if(view==='macro') ghost = macroCurves(V.macro);
   Object.assign(V[view], MODELS[view].presets[name]);
   S.preset[view] = name;
   syncPresets(); syncSheetInputs(); render();
+  track('seleccionar_escenario', {modulo:view, escenario:name, origen});
 }
 function syncPresets(){
   document.querySelectorAll('[data-preset]').forEach(b=>{
@@ -763,6 +788,17 @@ function clamp(id, view, val){
   const p = MODELS[view].groups.flatMap(g=>g.params).find(p=>p.id===id);
   return Math.min(p.max, Math.max(p.min, Math.round(val/p.step)*p.step));
 }
+
+/* ======================= Analítica de interacción ======================= */
+$('#cafeBtn').addEventListener('click', ()=>track('clic_cafe', {ubicacion:'banner_inferior'}));
+document.querySelectorAll('details.learn').forEach(d=>{
+  d.addEventListener('toggle', ()=>{
+    if(d.open) track('abrir_explicacion', {
+      modulo: d.closest('.view').id,
+      titulo: d.querySelector('summary').textContent.trim()
+    });
+  });
+});
 
 /* ======================= Init ======================= */
 function render(){ renderMicro(); renderMacro(); }
